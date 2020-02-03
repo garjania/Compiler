@@ -1,3 +1,6 @@
+import csv
+
+
 class Parser:
     def __init__(self):
         self.grammar = {'VAR_DCL': [['id', ':', 'SIMPLE_VAR'],
@@ -77,3 +80,40 @@ class Parser:
                         'ID_LOOP': [[',', 'ID', 'ID_LOOP']],
                         'EXPR_LOOP': [[',', 'EXPR', 'EXPR_LOOP']],
                         'IC_LOOP': [[',', 'ic', 'ic_LOOP']]}
+        self.table = []
+        self.read_table()
+
+    def read_table(self):
+        with open('Grammar/table.csv', newline='') as file:
+            csv_file = list(csv.reader(file, delimiter=',', quotechar='"'))
+            for i in range(1, len(csv_file)):
+                self.table.append({})
+                for j in range(1, len(csv_file[i])):
+                    self.table[i - 1][csv_file[0][j]] = csv_file[i][j].split()
+
+    def parse(self):
+        token = ''
+        stack = [[0, None]]
+        while True:
+            # TODO get token
+            top = stack[len(stack) - 1]
+            if top[1] is not None:
+                temp = top[1]
+            else:
+                temp = token
+            act = self.table[top[0]][temp]
+            if act[0] == 'ERROR':
+                # TODO handle error
+                print('error')
+            elif act[0] == 'SHIFT':
+                top[1] = temp
+                stack.append([int(act[1][1:]), None])
+                # TODO get token
+            elif act[0] == 'PUSH_GOTO':
+                top[1] = temp
+                stack.append([int(act[1][1:]), None])
+
+
+if __name__ == '__main__':
+    parser = Parser()
+    parser.parse()
