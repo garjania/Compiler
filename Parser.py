@@ -1,5 +1,7 @@
 import csv
 
+from CodeGen import CodeGen
+
 
 class Parser:
     def __init__(self):
@@ -9,9 +11,9 @@ class Parser:
                                      ['function', 'id', '(', 'VAR_DCL', 'ARG', ')', ':', 'TYPE', 'BLOCK']],
                         'PROC_DEF': [['procedure', 'id', '(', ')', 'BLOCK'],
                                      ['procedure', 'id', '(', 'VAR_DCL', ',VAR_DCL?', ')', 'BLOCK']],
-                        'SIMPLE_VAR': [['id', ':', 'TYPE'],
-                                       ['id', ':', 'TYPE', 'ASSIGNMENT']],
-                        'ARRAY_VAR': [['id', ':', 'array', 'ARRAY_DIM', 'of', 'TYPE']],
+                        'SIMPLE_VAR': [['TYPE'],
+                                       ['TYPE', 'ASSIGNMENT']],
+                        'ARRAY_VAR': [['array', 'ARRAY_DIM', 'of', 'TYPE']],
                         'ASSIGNMENT': [[':=', 'EXPR']],
                         'TYPE': [['type']],
                         'BLOCK': [['begin', 'STMT_LOOP', 'end']],
@@ -61,27 +63,37 @@ class Parser:
                         'Q': [['id', '[', 'EXPR', 'EXPR_LOOP', ']'],
                               ['id', '(', ')'],
                               ['id', '(', 'EXPR', 'EXPR_LOOP', ')'],
+                              ['id'],
                               ['CONSTANT'],
                               ['~', 'id', '[', 'EXPR', 'EXPR_LOOP', ']'],
                               ['~', 'id', '(', ')'],
                               ['~', 'id', '(', 'EXPR', 'EXPR_LOOP', ')'],
                               ['~', 'CONSTANT'],
+                              ['~', 'id'],
                               ['-', 'id', '[', 'EXPR', 'EXPR_LOOP', ']'],
                               ['-', 'id', '(', ')'],
                               ['-', 'id', '(', 'EXPR', 'EXPR_LOOP', ')'],
-                              ['-', 'CONSTANT']],
+                              ['-', 'CONSTANT'],
+                              ['-','id']],
                         'STMT_ID': [['[', 'EXPR', 'EXPR_LOOP', ']', 'ASSIGNMENT'],
                                     [':', 'SIMPLE_VAR'],
                                     [':', 'ARRAY_VAR'],
                                     ['(', ')'],
-                                    ['(', 'EXPR', 'EXPR_LOOP', ')']],
+                                    ['(', 'EXPR', 'EXPR_LOOP', ')'],
+                                    ['ASSIGNMENT']],
                         'ARG': [[';', 'VAR_DCL', 'ARG']],
                         'STMT_LOOP': [['STMT', ';', 'STMT_LOOP']],
                         'ID_LOOP': [[',', 'ID', 'ID_LOOP']],
                         'EXPR_LOOP': [[',', 'EXPR', 'EXPR_LOOP']],
-                        'IC_LOOP': [[',', 'ic', 'ic_LOOP']]}
+                        'IC_LOOP': [[',', 'ic', 'IC_LOOP']],
+                        'GLOB_VAR_DCL': [['id', ':', 'SIMPLE_VAR'],
+                                         ['id', ':', 'ARRAY_VAR']]}
         self.table = []
         self.read_table()
+        self.code_gen = CodeGen()
+        self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type', 'id',':','type','$']
+        # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type','function', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', ':', 'type', 'begin',
+        # 'id','(','id',')',';','while','(','id',')','do','begin','id',':=','ic','+','ic','*','id',';','end' ,';','end', '$']
 
     def read_table(self):
         with open('Grammar/table.csv', newline='') as file:
@@ -92,10 +104,11 @@ class Parser:
                     self.table[i - 1][csv_file[0][j]] = csv_file[i][j].split()
 
     def parse(self):
-        token = ''
         stack = [[0, None]]
+        token = self.tokens[0]
+        self.tokens = self.tokens[1:]
+        # TODO get token
         while True:
-            # TODO get token
             top = stack[len(stack) - 1]
             if top[1] is not None:
                 temp = top[1]
@@ -105,13 +118,43 @@ class Parser:
             if act[0] == 'ERROR':
                 # TODO handle error
                 print('error')
+                return
             elif act[0] == 'SHIFT':
+                self.code_gen.CG(act[2], token)
                 top[1] = temp
                 stack.append([int(act[1][1:]), None])
+                token = self.tokens[0]
+                self.tokens = self.tokens[1:]
                 # TODO get token
             elif act[0] == 'PUSH_GOTO':
+                self.code_gen.CG(act[2], token)
                 top[1] = temp
                 stack.append([int(act[1][1:]), None])
+            elif act[0] == 'GOTO':
+                self.code_gen.CG(act[2], token)
+                stack.append([int(act[1][1:]), None])
+            elif act[0] == 'REDUCE':
+                stack = stack[:len(stack)-1]
+                rels = list(self.grammar[act[1]])
+                found = -1
+                for r in rels:
+                    set = True
+                    l = len(stack)-1
+                    for i in range(len(r)-1, -1, -1):
+                        if stack[l][1] != r[i]:
+                            set = False
+                            break
+                        l -= 1
+                    if set:
+                        found = len(r)
+                        start = r[0]
+                while found > 0:
+                    stack = stack[:len(stack) - 1]
+                    found -= 1
+                stack[len(stack)-1][1] = act[1]
+            elif act[0] == 'ACCEPT':
+                print('yes chaghal')
+                break
 
 
 if __name__ == '__main__':
