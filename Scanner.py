@@ -52,7 +52,7 @@ class Scanner:
 
     def scan(self):
         while True:
-            print(len(symbol_table_stack))
+            # print(len(symbol_table_stack))
             if len(self.inp) == 0:
                 return '$'
 

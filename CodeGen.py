@@ -13,13 +13,13 @@ class CodeGen:
 
     def CG(self, func, token):
         print('===========')
-        print(func)
+        print(func , token)
 
         if func == '@push':
             if token == 'id':
                 self.stack.append(self.scanner.id)
             elif token == 'ic' or token == 'cc' or token == 'sc' or token == 'rc' or token == 'bc':
-                self.stack.append(self.scanner.const)
+                self.stack.append(str(self.scanner.const))
             else:
                 self.stack.append(token)
 
@@ -120,29 +120,39 @@ class CodeGen:
                 self.instruction('icmp neq i32', op1, op2)
 
         elif func == '@band':
+            op = self.stack[-2]  # &
             op1 = self.stack[-1] # id const
             op2 = self.stack[-3] # id const
-            self.instruction('and i32', op1, op2)
+            if op == '&':
+                self.instruction('and i32', op1, op2)
 
         elif func == '@bxor':
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
-            self.instruction('xor i32', op1, op2)
+            op = self.stack[-2]  # ^
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
+            if op == '^':
+                self.instruction('xor i32', op1, op2)
 
         elif func == '@bor':
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
-            self.instruction('or i32', op1, op2)
+            op = self.stack[-2]  # bor
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
+            if op == 'bor':
+                self.instruction('or i32', op1, op2)
 
         elif func == '@and':
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
-            self.instruction('and i1', op1, op2)
+            op = self.stack[-2]  # and
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
+            if op == 'and':
+                self.instruction('and i1', op1, op2)
 
         elif func == '@or':
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
-            self.instruction('or i1', op1, op2)
+            op = self.stack[-2]  # or
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
+            if op == 'or':
+                self.instruction('or i1', op1, op2)
 
         print(self.stack)
         print(self.ops)

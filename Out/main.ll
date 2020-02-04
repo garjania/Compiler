@@ -1,10 +1,6 @@
-@a = weak global i32 0 
 define i32 @hello()
 {
-	%b = alloca i8
-}
-define void @good([1 x [2 x float]] %b)
-{
-	%b = alloca i32
-	ret void
+	%_0 = mul i32 %4 %2
+	%_1 = add i32 %_0 %3
+	%i32 = alloca _1
 }

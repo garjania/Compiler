@@ -116,20 +116,21 @@ class Parser:
             else:
                 temp = token
             act = self.table[top[0]][temp]
-            # print(stack)
+            print(stack)
+            print(act)
             if act[0] == 'ERROR':
                 raise SyntaxError
             elif act[0] == 'SHIFT':
-                self.code_gen.CG(act[2], token)
+                token = self.scanner.scan()
+                self.code_gen.CG(act[2], temp)
                 top[1] = temp
                 stack.append([int(act[1][1:]), None])
-                token = self.scanner.scan()
             elif act[0] == 'PUSH_GOTO':
-                self.code_gen.CG(act[2], token)
+                self.code_gen.CG(act[2], temp)
                 top[1] = temp
                 stack.append([int(act[1][1:]), None])
             elif act[0] == 'GOTO':
-                self.code_gen.CG(act[2], token)
+                self.code_gen.CG(act[2], temp)
                 stack.append([int(act[1][1:]), None])
             elif act[0] == 'REDUCE':
                 stack = stack[:-1]
@@ -146,9 +147,8 @@ class Parser:
                     if set:
                         if len(r) > found:
                             found = len(r)
-                        start = r[0]
                 while found > 0:
-                    stack = stack[:len(stack) - 1]
+                    stack = stack[:-1]
                     found -= 1
                 stack[-1][1] = act[1]
             elif act[0] == 'ACCEPT':

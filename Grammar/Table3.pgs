@@ -1610,7 +1610,7 @@
         "start": 94,
         "end": 96,
         "token": "float",
-        "func": "",
+        "func": "push",
         "anchorX": 163.0,
         "anchorY": 250.5,
         "isGraph": false,
@@ -1620,7 +1620,7 @@
         "start": 94,
         "end": 97,
         "token": "ch",
-        "func": "",
+        "func": "push",
         "anchorX": 156.0,
         "anchorY": 266.0,
         "isGraph": false,
@@ -1630,7 +1630,7 @@
         "start": 94,
         "end": 98,
         "token": "str",
-        "func": "",
+        "func": "push",
         "anchorX": 143.5,
         "anchorY": 285.5,
         "isGraph": false,
@@ -1640,7 +1640,7 @@
         "start": 94,
         "end": 95,
         "token": "ic",
-        "func": "",
+        "func": "push",
         "anchorX": 164.0,
         "anchorY": 229.5,
         "isGraph": false,
@@ -1665,8 +1665,8 @@
         "isFinal": false
       },
       {
-        "x": 310.0,
-        "y": 204.5,
+        "x": 305.0,
+        "y": 247.5,
         "id": 101,
         "isFinal": true
       }
@@ -1717,8 +1717,8 @@
         "isFinal": false
       },
       {
-        "x": 432.0,
-        "y": 309.5,
+        "x": 433.0,
+        "y": 336.5,
         "id": 105,
         "isFinal": true
       }
@@ -1826,7 +1826,7 @@
       },
       {
         "x": 453.0,
-        "y": 345.5,
+        "y": 376.5,
         "id": 112,
         "isFinal": true
       }
@@ -1881,8 +1881,8 @@
         "isFinal": false
       },
       {
-        "x": 349.0,
-        "y": 416.0,
+        "x": 355.0,
+        "y": 448.0,
         "id": 115,
         "isFinal": true
       }
@@ -2041,8 +2041,8 @@
         "isFinal": false
       },
       {
-        "x": 462.0,
-        "y": 437.5,
+        "x": 466.0,
+        "y": 481.5,
         "id": 126,
         "isFinal": true
       }
@@ -2097,8 +2097,8 @@
         "isFinal": false
       },
       {
-        "x": 388.0,
-        "y": 408.5,
+        "x": 395.0,
+        "y": 447.5,
         "id": 129,
         "isFinal": true
       }
@@ -2149,8 +2149,8 @@
         "isFinal": false
       },
       {
-        "x": 444.0,
-        "y": 451.0,
+        "x": 497.0,
+        "y": 468.0,
         "id": 133,
         "isFinal": true
       }
@@ -2257,8 +2257,8 @@
         "isFinal": false
       },
       {
-        "x": 430.0,
-        "y": 393.0,
+        "x": 484.0,
+        "y": 387.0,
         "id": 140,
         "isFinal": true
       },
@@ -2275,8 +2275,8 @@
         "isFinal": false
       },
       {
-        "x": 447.0,
-        "y": 464.0,
+        "x": 469.0,
+        "y": 492.0,
         "id": 143,
         "isFinal": true
       }
@@ -2336,7 +2336,7 @@
         "start": 142,
         "end": 143,
         "token": "RP",
-        "func": "neq",
+        "func": "eq",
         "anchorX": 397.5,
         "anchorY": 464.0,
         "isGraph": true,
@@ -2413,8 +2413,8 @@
         "isFinal": false
       },
       {
-        "x": 324.0,
-        "y": 555.5,
+        "x": 339.0,
+        "y": 503.5,
         "id": 150,
         "isFinal": true
       },
@@ -2431,8 +2431,8 @@
         "isFinal": false
       },
       {
-        "x": 323.0,
-        "y": 590.5,
+        "x": 414.0,
+        "y": 606.5,
         "id": 153,
         "isFinal": true
       },
@@ -2449,8 +2449,8 @@
         "isFinal": false
       },
       {
-        "x": 332.0,
-        "y": 631.5,
+        "x": 406.0,
+        "y": 648.5,
         "id": 156,
         "isFinal": true
       },
@@ -2467,8 +2467,8 @@
         "isFinal": false
       },
       {
-        "x": 337.0,
-        "y": 673.5,
+        "x": 404.0,
+        "y": 698.5,
         "id": 159,
         "isFinal": true
       }
@@ -2478,7 +2478,7 @@
         "start": 147,
         "end": 148,
         "token": "\u003e",
-        "func": "",
+        "func": "id",
         "anchorX": 124.0,
         "anchorY": 557.0,
         "isGraph": false,
@@ -2488,7 +2488,7 @@
         "start": 147,
         "end": 151,
         "token": "\u003c",
-        "func": "",
+        "func": "id",
         "anchorX": 124.0,
         "anchorY": 585.0,
         "isGraph": false,
@@ -2498,7 +2498,7 @@
         "start": 147,
         "end": 154,
         "token": "\u003c\u003d",
-        "func": "",
+        "func": "id",
         "anchorX": 114.5,
         "anchorY": 612.0,
         "isGraph": false,
@@ -2508,7 +2508,7 @@
         "start": 147,
         "end": 157,
         "token": "\u003e\u003d",
-        "func": "",
+        "func": "id",
         "anchorX": 94.0,
         "anchorY": 644.5,
         "isGraph": false,
@@ -2528,7 +2528,7 @@
         "start": 149,
         "end": 150,
         "token": "OP",
-        "func": "greater",
+        "func": "gleq",
         "anchorX": 286.0,
         "anchorY": 555.5,
         "isGraph": true,
@@ -2548,7 +2548,7 @@
         "start": 152,
         "end": 153,
         "token": "OP",
-        "func": "lesser",
+        "func": "gleq",
         "anchorX": 288.0,
         "anchorY": 591.0,
         "isGraph": true,
@@ -2568,7 +2568,7 @@
         "start": 155,
         "end": 156,
         "token": "OP",
-        "func": "leq",
+        "func": "gleq",
         "anchorX": 297.0,
         "anchorY": 631.5,
         "isGraph": true,
@@ -2588,7 +2588,7 @@
         "start": 158,
         "end": 159,
         "token": "OP",
-        "func": "geq",
+        "func": "gleq",
         "anchorX": 298.5,
         "anchorY": 673.5,
         "isGraph": true,
@@ -2634,7 +2634,7 @@
         "start": 161,
         "end": 162,
         "token": "PP",
-        "func": "sum_minus",
+        "func": "plus_minus",
         "anchorX": 209.0,
         "anchorY": 513.0,
         "isGraph": true,
@@ -2665,8 +2665,8 @@
         "isFinal": false
       },
       {
-        "x": 356.0,
-        "y": 491.5,
+        "x": 376.0,
+        "y": 496.5,
         "id": 166,
         "isFinal": true
       },
@@ -2683,8 +2683,8 @@
         "isFinal": false
       },
       {
-        "x": 350.0,
-        "y": 571.5,
+        "x": 383.0,
+        "y": 591.5,
         "id": 169,
         "isFinal": true
       }
@@ -2694,7 +2694,7 @@
         "start": 163,
         "end": 164,
         "token": "+",
-        "func": "",
+        "func": "push",
         "anchorX": 124.0,
         "anchorY": 490.5,
         "isGraph": false,
@@ -2704,7 +2704,7 @@
         "start": 163,
         "end": 167,
         "token": "-",
-        "func": "",
+        "func": "push",
         "anchorX": 130.0,
         "anchorY": 530.5,
         "isGraph": false,
@@ -2724,7 +2724,7 @@
         "start": 165,
         "end": 166,
         "token": "PP",
-        "func": "sum",
+        "func": "plus_minus",
         "anchorX": 307.0,
         "anchorY": 490.5,
         "isGraph": true,
@@ -2744,7 +2744,7 @@
         "start": 168,
         "end": 169,
         "token": "PP",
-        "func": "minus",
+        "func": "plus_minus",
         "anchorX": 298.0,
         "anchorY": 571.0,
         "isGraph": true,
