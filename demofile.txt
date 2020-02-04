@@ -1,7 +1,7 @@
 //a:integer
 
 function hello():integer begin
-b : integer := 3 + 2*4;
+b : integer := 3 + 2*4.2;
 end
 
 //procedure good(b : array [1,2] of real) begin
