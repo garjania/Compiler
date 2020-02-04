@@ -12,8 +12,7 @@ class SymbolData:
 
 
 symbol_table = dict()
-const = None
-id = None
+symbol_table_stack = [symbol_table]
 
 
 def symbol_table_init():
@@ -43,18 +42,22 @@ class Scanner:
         f = open("demofile.txt", "r")
         self.inp = f.read()
         symbol_table_init()
+        self.prev_token = None
+        self.const = None
+        self.id = None
 
     def scan(self):
         while True:
-            if len(self.inp)==0:
+            if len(self.inp) == 0:
                 return '$'
 
             if self.inp[:2] in logical_operations or self.inp[:2] in shitty_characters:
-                token= self.inp[0:2]
+                token = self.inp[0:2]
                 self.inp = self.inp[2:]
                 return token
-            elif self.inp[0] in arithmetic_operations or self.inp[0] in logical_operations or self.inp[0] in shitty_characters:
-                token= self.inp[0]
+            elif self.inp[0] in arithmetic_operations or self.inp[0] in logical_operations or self.inp[
+                0] in shitty_characters:
+                token = self.inp[0]
                 self.inp = self.inp[1:]
                 return token
 
@@ -84,7 +87,7 @@ class Scanner:
                     return '<'
 
             elif self.inp[0] == '\'':
-                const = self.inp[1]
+                self.const = self.inp[1]
                 if self.inp[2] == '\'':
                     self.inp = self.inp[3:]
                     return 'cc'
@@ -94,9 +97,9 @@ class Scanner:
 
             elif self.inp[0] == '"':
                 self.inp = self.inp[1:]
-                const = ''
+                self.const = ''
                 while len(self.inp) != 0 and self.inp[0] != '"':
-                    const += self.inp[0]
+                    self.const += self.inp[0]
                     self.inp = self.inp[1:]
                 if len(self.inp) == 0:
                     raise SyntaxError
@@ -104,38 +107,38 @@ class Scanner:
                 return 'sc'
 
             elif self.inp[:4] == 'true':
-                const = True
+                self.const = True
                 self.inp = self.inp[4:]
                 return 'bc'
 
             elif self.inp[:5] == 'false':
-                const = False
+                self.const = False
                 self.inp = self.inp[5:]
                 return 'bc'
 
             elif self.inp[0] in digits:
                 if self.inp[:2] == '0x' and self.inp[2] in digits:
-                    const = 0
+                    self.const = 0
                     self.inp = self.inp[2:]
                     while self.inp[0] in digits or self.inp[0] in ['A', 'B', 'C', 'D', 'E', 'F']:
                         if self.inp[0] in digits:
-                            const = const * 16 + (int(self.inp[0]))
+                            self.const = self.const * 16 + (int(self.inp[0]))
                         else:
-                            const = const * 16 + (ord(self.inp[0]) - 55)
+                            self.const = self.const * 16 + (ord(self.inp[0]) - 55)
                         self.inp = self.inp[1:]
 
                     return 'ic'
 
                 else:
-                    const = 0
+                    self.const = 0
                     while self.inp[0] in digits:
-                        const = const * 10 + int(self.inp[0])
+                        self.const = self.const * 10 + int(self.inp[0])
                         self.inp = self.inp[1:]
                     if self.inp[0] == '.':
                         self.inp = self.inp[1:]
                         po = -1
                         while self.inp[0] in digits:
-                            const = const + int(self.inp[0]) * pow(10, po)
+                            self.const = self.const + int(self.inp[0]) * pow(10, po)
                             self.inp = self.inp[1:]
                             po -= 1
                         return 'rc'
@@ -149,15 +152,15 @@ class Scanner:
             else:
                 for i in range(2, 10):
                     if self.inp[:i] in data_types or self.inp[:i] in key_words:
-                        token= self.inp[:i]
+                        token = self.inp[:i]
                         self.inp = self.inp[i:]
                         return token
                 m = re.match(r"([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*", self.inp)
                 if m:
-                    id = m.group()
-                    self.inp = self.inp[len(id):]
-                    if id not in symbol_table.keys():
-                        symbol_table[id] = SymbolData(id, None)
+                    self.id = m.group()
+                    self.inp = self.inp[len(self.id):]
+                    if self.id not in symbol_table.keys():
+                        symbol_table[self.id] = SymbolData(self.id, None)
                     return 'id'
                 else:
                     print('=======')
@@ -165,7 +168,7 @@ class Scanner:
                     raise SyntaxError
 
 
-scanner=Scanner()
+scanner = Scanner()
 # character constant: cc
 # string constant: sc
 # bool constant: bc
