@@ -204,7 +204,17 @@ class CodeGen:
 
     def instruction(self, inst, op1, op2):
         self.stack = self.stack[:-3]
-        self.ops.append('%' + self.unnamed_count + ' = ' + inst + ' %' + op1 + ' %' + op2)
+        var_const_1 = ' '
+        try:
+            int(op1)
+        except:
+            var_const_1 = ' %'
+        var_const_2 = ' '
+        try:
+            int(op2)
+        except:
+            var_const_2 = ' %'
+        self.ops.append('%' + self.unnamed_count + ' = ' + inst + var_const_1 + op1 + ',' + var_const_2 + op2)
         self.stack.append(self.unnamed_count)
         # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
         self.unnamed_count = '_' + str(int(self.unnamed_count[1:])+1)
