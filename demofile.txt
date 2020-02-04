@@ -1,15 +1,10 @@
-procedure strlen(sor:integer; ali:string) : character
+<--procedure strlen(sor:integer; ali:string) : character
 begin
     asdef=fasdf+sdf/sadf*sdf
     120:='a'+"fghjkjhgfgh"+false-true*1.321
     a&b^d|saand
-    // fuck you bitch
-    <-- ye kiiiiire gonde
-    tu
-    garjani
-    -->
-    -- kire garjan in ghadre .
-endahmad : integer)(())
+end
+ahmad : integer)(())
 if ahmad then
 begin
     s=b+c
@@ -20,7 +15,13 @@ a := 3;
 return a;
 end
 
+-->
 procedure good(b : array [1,2] of real) begin
-b[a] := 3;
+b[1] := 3;
 end
 
+if true then
+begin
+ahmad:integer
+end
+//ahmad:=1000
