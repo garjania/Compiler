@@ -158,6 +158,7 @@ class Parser:
                     found -= 1
                 stack[len(stack)-1][1] = act[1]
             elif act[0] == 'ACCEPT':
+                self.code_gen.write()
                 print('yes chaghal')
                 break
 

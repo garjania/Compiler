@@ -8,7 +8,7 @@ begin
     tu
     garjani
     -->
-    -- kire garjan in ghadre .
+    -- kire garjan in ghadre . (chaghal felan ke too koon to mikhan bezaran :) )
 endahmad : integer)(())
 if ahmad then
 begin
@@ -16,7 +16,7 @@ begin
 a:integer
 
 function hello():integer begin
-a := 3;
+b : character;
 return a;
 end
 
