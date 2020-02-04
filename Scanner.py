@@ -13,11 +13,13 @@ class SymbolData:
 symbol_table_stack = []
 
 
-def symbol_table_init(st):
-    st['boolean'] = SymbolData('boolean', type='boolean', size=1)
-    st['integer'] = SymbolData('integer', type='integer', size=4)
-    st['character'] = SymbolData('character', type='character', size=1)
-    st['real'] = SymbolData('real', type='real', size=4)
+def init_scope():
+    symbol_table = dict()
+    symbol_table['boolean'] = SymbolData('boolean', type='boolean', size=1)
+    symbol_table['integer'] = SymbolData('integer', type='integer', size=4)
+    symbol_table['character'] = SymbolData('character', type='character', size=1)
+    symbol_table['real'] = SymbolData('real', type='real', size=4)
+    symbol_table_stack.append(symbol_table)
 
 
 arithmetic_operations = ['+', '*', '&', '^', '|', '%']
@@ -30,21 +32,15 @@ white_spaces = ['\n', '\t', ' ', '\f', '\r', '\t', '\v']
 digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
-def pass_token(token):
-    print(token)
-    pass
-
-
 class Scanner:
     def __init__(self):
-        symbol_table = dict()
-        symbol_table_init(symbol_table)
-        symbol_table_stack.append(symbol_table)
+        init_scope()
         f = open("demofile.txt", "r")
         self.inp = f.read()
         self.prev_token = None
         self.const = None
         self.id = None
+        self.ignore = False
 
     def next_token(self):
         inp = self.inp
@@ -56,6 +52,7 @@ class Scanner:
 
     def scan(self):
         while True:
+            print(len(symbol_table_stack))
             if len(self.inp) == 0:
                 return '$'
 
@@ -69,6 +66,7 @@ class Scanner:
                 token = self.inp[0]
                 self.inp = self.inp[1:]
                 self.prev_token = token
+                self.ignore = False
                 return token
 
             elif self.inp[0] == '/':
@@ -175,16 +173,31 @@ class Scanner:
                         token = self.inp[:i]
                         self.inp = self.inp[i:]
                         self.prev_token = token
+                        if token == 'function' or token == 'procedure':
+                            init_scope()
+                            self.ignore = True
+                        if token == 'begin':
+                            if self.prev_token == 'then' or self.prev_token == 'do':
+                                init_scope()
+                        elif token == 'end':
+                            symbol_table_stack.pop(-1)
                         return token
                 m = re.match(r"([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*", self.inp)
                 if m:
                     self.id = m.group()
                     self.inp = self.inp[len(self.id):]
-                    if self.id not in symbol_table_stack[-1].keys():
-                        if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
-                            symbol_table_stack[-1][self.id] = SymbolData(self.id, None)
-                        else:
-                            raise NotImplementedError
+                    if not self.ignore:
+                        if self.id not in symbol_table_stack[-1].keys():
+                            if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
+                                symbol_table_stack[-1][self.id] = SymbolData(self.id)
+                            else:
+                                raise NotImplementedError
+                    else:
+                        if self.id not in symbol_table_stack[-2].keys():
+                            if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
+                                symbol_table_stack[-2][self.id] = SymbolData(self.id)
+                            else:
+                                raise NotImplementedError
 
                     self.prev_token = 'id'
                     return 'id'
@@ -194,7 +207,7 @@ class Scanner:
                     raise SyntaxError
 
 
-# scanner = Scanner()
+scanner = Scanner()
 # for i in range(100):
 #     print(scanner.scan())
 # character constant: cc
