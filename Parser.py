@@ -97,10 +97,6 @@ class Parser:
         self.read_table()
         self.scanner = Scanner()
         self.code_gen = CodeGen(self.scanner)
-        # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type', 'id',':','type','$']
-        # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type','function', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', ':', 'type', 'begin',
-        # 'end','procedure', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', 'begin','id',':=','ic','*','ic','end', '$']
-        # # 'id','(','id',')',';','while','(','id',')','do','begin','id',':=','ic','+','ic','*','id',';','end' ,';',
 
     def read_table(self):
         with open('Grammar/table.csv', newline='') as file:
@@ -122,9 +118,7 @@ class Parser:
             act = self.table[top[0]][temp]
             # print(stack)
             if act[0] == 'ERROR':
-                # TODO handle error
-                print('error')
-                return
+                raise SyntaxError
             elif act[0] == 'SHIFT':
                 self.code_gen.CG(act[2], token)
                 top[1] = temp

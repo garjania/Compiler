@@ -6,8 +6,7 @@ class SymbolData:
         self.name = name
         self.type = type
         self.value = value
-        self.lb = None
-        self.ub = None
+        self.array = False
         self.size = size
 
 
