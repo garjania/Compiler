@@ -1,18 +1,24 @@
 class CodeGen:
-    def __init__(self):
+    def __init__(self, scanner):
         self.stack = []
         self.ops = []
         self.DSTB = {}
         self.is_glob = True
         self.func_mode = False
         self.unnamed_count = 0
+        self.scanner = scanner
 
     def CG(self, func, token):
         print('===========')
         print(func)
 
         if func == '@push':
-            self.stack.append(token)
+            if token == 'id':
+                self.stack.append(self.scanner.id)
+            elif token == 'ic' or token == 'cc' or token == 'sc' or token == 'rc' or token == 'bc':
+                self.stack.append(self.scanner.const)
+            else:
+                self.stack.append(token)
 
         elif func == '@def_var':
             self.def_var()
@@ -28,7 +34,7 @@ class CodeGen:
             dim = self.stack[len(self.stack) - 1]
             self.stack = self.stack[:len(self.stack) - 1]
             self.stack[len(self.stack) - 1] += ']'
-            self.stack[len(self.stack) - 2] += '[' + dim + ' x '
+            self.stack[len(self.stack) - 2] += '[' + str(dim) + ' x '
 
         elif func == '@set_type':
             self.set_type()

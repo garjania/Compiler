@@ -95,8 +95,8 @@ class Parser:
                                          ['id', ':', 'ARRAY_VAR']]}
         self.table = []
         self.read_table()
-        self.code_gen = CodeGen()
         self.scanner = Scanner()
+        self.code_gen = CodeGen(self.scanner)
         # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type', 'id',':','type','$']
         # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type','function', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', ':', 'type', 'begin',
         # 'end','procedure', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', 'begin','id',':=','ic','*','ic','end', '$']
