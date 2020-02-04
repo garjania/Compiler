@@ -55,7 +55,6 @@ class Scanner:
             # print(len(symbol_table_stack))
             if len(self.inp) == 0:
                 return '$'
-
             if self.inp[:2] in logical_operations or self.inp[:2] in shitty_characters:
                 token = self.inp[0:2]
                 self.inp = self.inp[2:]

@@ -92,7 +92,7 @@
         "start": 1,
         "end": 3,
         "token": "SIMPLE_VAR",
-        "func": "def_var",
+        "func": "",
         "anchorX": 267.5,
         "anchorY": 62.0,
         "isGraph": true,
@@ -143,8 +143,8 @@
         "isFinal": false
       },
       {
-        "x": 510.0,
-        "y": 239.5,
+        "x": 501.0,
+        "y": 252.5,
         "id": 9,
         "isFinal": false
       },
@@ -161,8 +161,8 @@
         "isFinal": false
       },
       {
-        "x": 797.0,
-        "y": 259.5,
+        "x": 793.0,
+        "y": 279.5,
         "id": 12,
         "isFinal": false
       },
@@ -462,7 +462,7 @@
         "start": 26,
         "end": 24,
         "token": "TYPE",
-        "func": "set_type",
+        "func": "def_var",
         "anchorX": 385.5,
         "anchorY": 172.75,
         "isGraph": true,
@@ -1310,7 +1310,7 @@
       },
       {
         "x": 844.0,
-        "y": 268.5,
+        "y": 296.5,
         "id": 82,
         "isFinal": true
       }
@@ -3164,7 +3164,7 @@
         "start": 183,
         "end": 184,
         "token": "CONSTANT",
-        "func": "push",
+        "func": "",
         "anchorX": 183.5,
         "anchorY": 415.0,
         "isGraph": true,
@@ -3204,7 +3204,7 @@
         "start": 185,
         "end": 186,
         "token": "CONSTANT",
-        "func": "push",
+        "func": "",
         "anchorX": 188.5,
         "anchorY": 621.0,
         "isGraph": true,
@@ -3224,7 +3224,7 @@
         "start": 187,
         "end": 188,
         "token": "CONSTANT",
-        "func": "push",
+        "func": "",
         "anchorX": 267.0,
         "anchorY": 207.5,
         "isGraph": true,

@@ -10,11 +10,12 @@ class CodeGen:
         self.unnamed_count = '_0'
         self.scanner = scanner
         self.proc = False
+        self.var = None
 
     def CG(self, func, token):
         print('===========')
         print(func , token)
-
+        print(symbol_table_stack[0])
         if func == '@push':
             if token == 'id':
                 self.stack.append(self.scanner.id)
@@ -24,7 +25,8 @@ class CodeGen:
                 self.stack.append(token)
 
         elif func == '@def_var':
-            self.def_var()
+            if token == 'TYPE':
+                self.def_var()
 
         elif func == '@def_arr':
             self.def_arr()
@@ -38,9 +40,6 @@ class CodeGen:
             self.stack = self.stack[:-1]
             self.stack[-1] += ']'
             self.stack[-2] += '[' + str(dim) + ' x '
-
-        elif func == '@set_type':
-            self.set_type()
 
         elif func == '@enter_def_func_mode':
             self.func_mode = True
@@ -76,6 +75,11 @@ class CodeGen:
                 self.ops.append('ret void')
                 self.proc = False
             self.ops.append('}')
+
+        elif func == '@assign':
+            type = symbol_table_stack[-1][self.var].type
+            type = 'i32'
+            self.ops.append('store ' + type + ' %' + self.stack[-1] + ', ' + type + '* %' + self.var)
 
         elif func == '@mult_div_mod':
             op = self.stack[-2] # * / %
@@ -190,6 +194,7 @@ class CodeGen:
         self.stack = self.stack[:-4]
 
     def def_var(self):
+        self.set_type()
         if not self.func_mode:
             if self.is_glob:
                 struct = '@' + self.stack[-2] + ' = weak global ' + self.stack[-1] + ' 0 '
@@ -200,6 +205,7 @@ class CodeGen:
             struct = self.stack[-1] + ' %' + self.stack[-2]
             self.stack[-3] += struct + ', '
         # symbol_table_stack[-1][self.stack[-4]].type = self.stack[-1]
+        self.var = self.stack[-2]
         self.stack = self.stack[:-2]
 
     def instruction(self, inst, op1, op2):
@@ -239,8 +245,6 @@ class CodeGen:
     #     self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
     #     if type1 != 'float':
     #         self.proc.append('')
-
-
 
     def write(self):
         indent = ''
