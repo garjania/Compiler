@@ -88,6 +88,61 @@ class CodeGen:
             elif op == 'mod':
                 self.instruction('srem i32', op1, op2)
 
+        elif func == '@plus_minus':
+            op = self.stack[-2] # + -
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            if op == '+':
+                self.instruction('add i32', op1, op2)
+            elif op == '-':
+                self.instruction('sub i32', op1, op2)
+
+        elif func == '@gleq':
+            op = self.stack[-2] # < > <= >=
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            if op == '>':
+                self.instruction('icmp sgt i32', op1, op2)
+            elif op == '<':
+                self.instruction('icmp slt i32', op1, op2)
+            elif op == '>=':
+                self.instruction('icmp sge i32', op1, op2)
+            elif op == '<=':
+                self.instruction('icmp sle i32', op1, op2)
+
+        elif func == '@eq':
+            op = self.stack[-2] # == <>
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            if op == '==':
+                self.instruction('icmp eq i32', op1, op2)
+            elif op == '<>':
+                self.instruction('icmp neq i32', op1, op2)
+
+        elif func == '@band':
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            self.instruction('and i32', op1, op2)
+
+        elif func == '@bxor':
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            self.instruction('xor i32', op1, op2)
+
+        elif func == '@bor':
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            self.instruction('or i32', op1, op2)
+
+        elif func == '@and':
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            self.instruction('and i1', op1, op2)
+
+        elif func == '@or':
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            self.instruction('or i1', op1, op2)
 
         print(self.stack)
         print(self.ops)
