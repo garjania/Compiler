@@ -1,27 +1,10 @@
-<--procedure strlen(sor:integer; ali:string) : character
-begin
-    asdef=fasdf+sdf/sadf*sdf
-    120:='a'+"fghjkjhgfgh"+false-true*1.321
-    a&b^d|saand
-end
-ahmad : integer)(())
-if ahmad then
-begin
-    s=b+c
 a:integer
 
 function hello():integer begin
-a := 3;
-return a;
+b : character;
 end
 
--->
 procedure good(b : array [1,2] of real) begin
-b[1] := 3;
+b: integer;
 end
 
-if true then
-begin
-ahmad:integer
-end
-//ahmad:=1000

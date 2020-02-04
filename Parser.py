@@ -95,8 +95,8 @@ class Parser:
                                          ['id', ':', 'ARRAY_VAR']]}
         self.table = []
         self.read_table()
-        self.code_gen = CodeGen()
         self.scanner = Scanner()
+        self.code_gen = CodeGen(self.scanner)
         # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type', 'id',':','type','$']
         # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type','function', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', ':', 'type', 'begin',
         # 'end','procedure', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', 'begin','id',':=','ic','*','ic','end', '$']
@@ -138,7 +138,7 @@ class Parser:
                 self.code_gen.CG(act[2], token)
                 stack.append([int(act[1][1:]), None])
             elif act[0] == 'REDUCE':
-                stack = stack[:len(stack)-1]
+                stack = stack[:-1]
                 rels = list(self.grammar[act[1]])
                 found = -1
                 for r in rels:
@@ -156,8 +156,9 @@ class Parser:
                 while found > 0:
                     stack = stack[:len(stack) - 1]
                     found -= 1
-                stack[len(stack)-1][1] = act[1]
+                stack[-1][1] = act[1]
             elif act[0] == 'ACCEPT':
+                self.code_gen.write()
                 print('yes chaghal')
                 break
 

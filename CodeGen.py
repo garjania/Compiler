@@ -1,18 +1,25 @@
 class CodeGen:
-    def __init__(self):
+    def __init__(self, scanner):
         self.stack = []
         self.ops = []
         self.DSTB = {}
         self.is_glob = True
         self.func_mode = False
         self.unnamed_count = 0
+        self.scanner = scanner
+        self.proc = False
 
     def CG(self, func, token):
         print('===========')
         print(func)
 
         if func == '@push':
-            self.stack.append(token)
+            if token == 'id':
+                self.stack.append(self.scanner.id)
+            elif token == 'ic' or token == 'cc' or token == 'sc' or token == 'rc' or token == 'bc':
+                self.stack.append(self.scanner.const)
+            else:
+                self.stack.append(token)
 
         elif func == '@def_var':
             self.def_var()
@@ -28,7 +35,7 @@ class CodeGen:
             dim = self.stack[len(self.stack) - 1]
             self.stack = self.stack[:len(self.stack) - 1]
             self.stack[len(self.stack) - 1] += ']'
-            self.stack[len(self.stack) - 2] += '[' + dim + ' x '
+            self.stack[len(self.stack) - 2] += '[' + str(dim) + ' x '
 
         elif func == '@set_type':
             self.set_type()
@@ -44,24 +51,28 @@ class CodeGen:
 
         elif func == '@comp_func':
             self.set_type()
-            op = 'define ' + self.stack[len(self.stack)-1] + ' ' + self.stack[len(self.stack)-3] + '(' + \
-                 self.stack[len(self.stack)-2] + ')'
+            op = 'define ' + self.stack[-1] + ' @' + self.stack[-3] + '(' + \
+                 self.stack[-2] + ')'
             self.ops.append(op)
             # TODO add to symbol table and clean stack
 
         elif func == '@exit_def_proc_mode':
             self.func_mode = False
             self.is_glob = False
-            self.stack[len(self.stack) - 1] = self.stack[len(self.stack) - 1][:len(self.stack[len(self.stack) - 1]) - 2]
-            op = 'define void ' + self.stack[len(self.stack) - 2] + '(' + \
-                 self.stack[len(self.stack) - 1] + ')'
+            self.stack[-1] = self.stack[-1][:len(self.stack[-1]) - 2]
+            op = 'define void @' + self.stack[-2] + '(' + \
+                 self.stack[-1] + ')'
             self.ops.append(op)
+            self.proc = True
             # TODO add to symbol table and clean stack
 
         elif func == '@in_bra':
             self.ops.append('{')
 
         elif func == '@out_bra':
+            if self.proc:
+                self.ops.append('ret void')
+                self.proc = False
             self.ops.append('}')
 
         elif func == '@mult':
@@ -101,10 +112,12 @@ class CodeGen:
             # TODO if was declared before return err and add to symbol table
             self.DSTB[self.stack[len(self.stack) - 4]] = ['ARR', self.stack[len(self.stack) - 1]]
             if self.is_glob:
+                sign = '@'
                 allo_type = ' = weak global '
             else:
+                sign = '%'
                 allo_type = ' = alloca '
-            struct = '%' + self.stack[len(self.stack) - 4] + allo_type + self.stack[len(self.stack) - 3] + \
+            struct = sign + self.stack[len(self.stack) - 4] + allo_type + self.stack[len(self.stack) - 3] + \
                      self.stack[len(self.stack) - 1] + self.stack[len(self.stack) - 2]
             self.ops.append(struct)
         else:
@@ -118,10 +131,9 @@ class CodeGen:
             # TODO if was declared before return err
             self.DSTB[self.stack[len(self.stack) - 2]] = ['VAR', self.stack[len(self.stack) - 1]]
             if self.is_glob:
-                allo_type = ' = weak global '
+                struct = '@' + self.stack[len(self.stack) - 2] + ' = weak global ' + self.stack[len(self.stack) - 1] + ' 0 '
             else:
-                allo_type = ' = alloca '
-            struct = '%' + self.stack[len(self.stack) - 2] + allo_type + self.stack[len(self.stack) - 1]
+                struct = '%' + self.stack[len(self.stack) - 2] + ' = alloca ' + self.stack[len(self.stack) - 1]
             self.ops.append(struct)
         else:
             struct = self.stack[len(self.stack) - 1] + ' %' + self.stack[len(self.stack) - 2]
@@ -134,3 +146,13 @@ class CodeGen:
         self.stack = self.stack[:len(self.stack) - 2]
         # TODO add unnamed to symbol table and push it to stack
         self.ops.append('%' + str(self.unnamed_count) + ' = ' + inst + ' %' + op1 + ' %' + op2)
+
+    def write(self):
+        indent = ''
+        with open('Out/main.ll', 'w+') as out:
+            for op in self.ops:
+                if op == '}':
+                    indent = indent[:-1]
+                out.write(indent + op + '\n')
+                if op == '{':
+                    indent += '\t'
