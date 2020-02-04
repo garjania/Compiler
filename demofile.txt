@@ -1,0 +1,17 @@
+if ahmad then
+begin
+    s=b+c
+end
+
+procedure strlen(sor:integer; ali:string) : character
+begin
+    asdef=fasdf+sdf/sadf*sdf
+    120:='a'+"fghjkjhgfgh"+false-true*1.321
+    a&b^d|saand
+    // fuck you bitch
+    <-- ye kiiiiire gonde
+    tu
+    garjani
+    -->
+    -- kire garjan in ghadre .
+end
