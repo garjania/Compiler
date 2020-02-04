@@ -4,7 +4,7 @@ function hello():integer begin
 b : character;
 end
 
-procedure good(b : array [1,2] of real) begin
+procedure good(b : array [1,2] of real;) begin
 b: integer;
 end
 

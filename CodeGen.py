@@ -77,7 +77,16 @@ class CodeGen:
                 self.proc = False
             self.ops.append('}')
 
-
+        elif func == '@mult_div_mod':
+            op = self.stack[-2] # * / %
+            op1 = self.stack[-1] # id const
+            op2 = self.stack[-3] # id const
+            if op == '*':
+                self.instruction('mul i32', op1, op2)
+            elif op == '/':
+                self.instruction('udiv float', op1, op2)
+            elif op == 'mod':
+                self.instruction('srem i32', op1, op2)
 
 
         print(self.stack)
@@ -113,7 +122,7 @@ class CodeGen:
             self.stack[-5] += struct + ', '
         # symbol_table_stack[-1][self.stack[-4]].type = self.stack[-1]
         # symbol_table_stack[-1][self.stack[-4]].array = True
-        self.stack = self.stack[:- 4]
+        self.stack = self.stack[:-4]
 
     def def_var(self):
         if not self.func_mode:
@@ -128,10 +137,8 @@ class CodeGen:
         # symbol_table_stack[-1][self.stack[-4]].type = self.stack[-1]
         self.stack = self.stack[:-2]
 
-    def instruction(self, inst):
-        op1 = self.stack[-1]
-        op2 = self.stack[-2]
-        self.stack = self.stack[:-2]
+    def instruction(self, inst, op1, op2):
+        self.stack = self.stack[:-3]
         self.ops.append('%' + self.unnamed_count + ' = ' + inst + ' %' + op1 + ' %' + op2)
         self.stack.append(self.unnamed_count)
         # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)

@@ -737,8 +737,8 @@
         "isFinal": false
       },
       {
-        "x": 173.0,
-        "y": 236.0,
+        "x": 196.0,
+        "y": 214.0,
         "id": 42,
         "isFinal": false
       },
@@ -821,8 +821,8 @@
         "end": 42,
         "token": "(",
         "func": "",
-        "anchorX": 133.5,
-        "anchorY": 209.5,
+        "anchorX": 153.5,
+        "anchorY": 181.5,
         "isGraph": false,
         "isGlobal": false
       },
@@ -872,7 +872,7 @@
         "token": "ID",
         "func": "",
         "anchorX": 213.0,
-        "anchorY": 250.0,
+        "anchorY": 249.9999999999999,
         "isGraph": true,
         "isGlobal": false
       },
@@ -2839,8 +2839,8 @@
         "isFinal": false
       },
       {
-        "x": 301.0,
-        "y": 519.5,
+        "x": 364.0,
+        "y": 518.5,
         "id": 179,
         "isFinal": true
       },
@@ -2857,8 +2857,8 @@
         "isFinal": false
       },
       {
-        "x": 319.0,
-        "y": 608.5,
+        "x": 371.0,
+        "y": 604.5,
         "id": 182,
         "isFinal": true
       }
@@ -2868,7 +2868,7 @@
         "start": 173,
         "end": 174,
         "token": "*",
-        "func": "",
+        "func": "push",
         "anchorX": 126.5,
         "anchorY": 452.5,
         "isGraph": false,
@@ -2878,7 +2878,7 @@
         "start": 173,
         "end": 177,
         "token": "/",
-        "func": "",
+        "func": "push",
         "anchorX": 124.5,
         "anchorY": 486.0,
         "isGraph": false,
@@ -2888,7 +2888,7 @@
         "start": 173,
         "end": 180,
         "token": "%",
-        "func": "",
+        "func": "push",
         "anchorX": 94.0,
         "anchorY": 548.5,
         "isGraph": false,
@@ -2908,7 +2908,7 @@
         "start": 175,
         "end": 176,
         "token": "WP",
-        "func": "mult",
+        "func": "mult_div_mod",
         "anchorX": 256.0,
         "anchorY": 457.5,
         "isGraph": true,
@@ -2928,7 +2928,7 @@
         "start": 178,
         "end": 179,
         "token": "WP",
-        "func": "div",
+        "func": "mult_div_mod",
         "anchorX": 264.0,
         "anchorY": 521.0,
         "isGraph": true,
@@ -2948,7 +2948,7 @@
         "start": 181,
         "end": 182,
         "token": "WP",
-        "func": "mod",
+        "func": "mult_div_mod",
         "anchorX": 278.0,
         "anchorY": 604.5,
         "isGraph": true,
