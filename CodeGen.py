@@ -7,6 +7,7 @@ class CodeGen:
         self.func_mode = False
         self.unnamed_count = 0
         self.scanner = scanner
+        self.proc = False
 
     def CG(self, func, token):
         print('===========')
@@ -50,24 +51,28 @@ class CodeGen:
 
         elif func == '@comp_func':
             self.set_type()
-            op = 'define ' + self.stack[len(self.stack)-1] + ' @' + self.stack[len(self.stack)-3] + '(' + \
-                 self.stack[len(self.stack)-2] + ')'
+            op = 'define ' + self.stack[-1] + ' @' + self.stack[-3] + '(' + \
+                 self.stack[-2] + ')'
             self.ops.append(op)
             # TODO add to symbol table and clean stack
 
         elif func == '@exit_def_proc_mode':
             self.func_mode = False
             self.is_glob = False
-            self.stack[len(self.stack) - 1] = self.stack[len(self.stack) - 1][:len(self.stack[len(self.stack) - 1]) - 2]
-            op = 'define void @' + self.stack[len(self.stack) - 2] + '(' + \
-                 self.stack[len(self.stack) - 1] + ')'
+            self.stack[-1] = self.stack[-1][:len(self.stack[-1]) - 2]
+            op = 'define void @' + self.stack[-2] + '(' + \
+                 self.stack[-1] + ')'
             self.ops.append(op)
+            self.proc = True
             # TODO add to symbol table and clean stack
 
         elif func == '@in_bra':
             self.ops.append('{')
 
         elif func == '@out_bra':
+            if self.proc:
+                self.ops.append('ret void')
+                self.proc = False
             self.ops.append('}')
 
         elif func == '@mult':
@@ -147,7 +152,7 @@ class CodeGen:
         with open('Out/main.ll', 'w+') as out:
             for op in self.ops:
                 if op == '}':
-                    indent = indent[:len(indent)-1]
+                    indent = indent[:-1]
                 out.write(indent + op + '\n')
                 if op == '{':
                     indent += '\t'
