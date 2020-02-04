@@ -42,22 +42,18 @@ class Scanner:
         f = open("demofile.txt", "r")
         self.inp = f.read()
         symbol_table_init()
-        self.prev_token = None
-        self.const = None
-        self.id = None
 
     def scan(self):
         while True:
-            if len(self.inp) == 0:
+            if len(self.inp)==0:
                 return '$'
 
             if self.inp[:2] in logical_operations or self.inp[:2] in shitty_characters:
-                token = self.inp[0:2]
+                token= self.inp[0:2]
                 self.inp = self.inp[2:]
                 return token
-            elif self.inp[0] in arithmetic_operations or self.inp[0] in logical_operations or self.inp[
-                0] in shitty_characters:
-                token = self.inp[0]
+            elif self.inp[0] in arithmetic_operations or self.inp[0] in logical_operations or self.inp[0] in shitty_characters:
+                token= self.inp[0]
                 self.inp = self.inp[1:]
                 return token
 
@@ -167,8 +163,6 @@ class Scanner:
                     print(self.inp)
                     raise SyntaxError
 
-
-scanner = Scanner()
 # character constant: cc
 # string constant: sc
 # bool constant: bc
