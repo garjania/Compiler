@@ -13,5 +13,14 @@ endahmad : integer)(())
 if ahmad then
 begin
     s=b+c
+a:integer
+
+function hello():integer begin
+a := 3;
+return a;
+end
+
+procedure good(b : array [1,2] of real) begin
+b[a] := 3;
 end
 

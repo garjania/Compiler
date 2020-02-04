@@ -1,6 +1,7 @@
 import csv
 
 from CodeGen import CodeGen
+from Scanner import Scanner
 
 
 class Parser:
@@ -10,12 +11,16 @@ class Parser:
                         'FUNC_DEF': [['function', 'id', '(', ')', ':', 'TYPE', 'BLOCK'],
                                      ['function', 'id', '(', 'VAR_DCL', 'ARG', ')', ':', 'TYPE', 'BLOCK']],
                         'PROC_DEF': [['procedure', 'id', '(', ')', 'BLOCK'],
-                                     ['procedure', 'id', '(', 'VAR_DCL', ',VAR_DCL?', ')', 'BLOCK']],
+                                     ['procedure', 'id', '(', 'VAR_DCL', 'ARG', ')', 'BLOCK']],
                         'SIMPLE_VAR': [['TYPE'],
                                        ['TYPE', 'ASSIGNMENT']],
                         'ARRAY_VAR': [['array', 'ARRAY_DIM', 'of', 'TYPE']],
                         'ASSIGNMENT': [[':=', 'EXPR']],
-                        'TYPE': [['type']],
+                        'TYPE': [['integer'],
+                                 ['real'],
+                                 ['character'],
+                                 ['string'],
+                                 ['boolean']],
                         'BLOCK': [['begin', 'STMT_LOOP', 'end']],
                         'STMT': [['return', 'id'],
                                  ['CONDITIONAL'],
@@ -91,9 +96,11 @@ class Parser:
         self.table = []
         self.read_table()
         self.code_gen = CodeGen()
-        self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type', 'id',':','type','$']
+        self.scanner = Scanner()
+        # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type', 'id',':','type','$']
         # self.tokens = ['id',':', 'array', '[','ic',',','ic',']','of','type','function', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', ':', 'type', 'begin',
-        # 'id','(','id',')',';','while','(','id',')','do','begin','id',':=','ic','+','ic','*','id',';','end' ,';','end', '$']
+        # 'end','procedure', 'id', '(', 'id', ':', 'type',';' , 'id',':', 'array', '[','ic',',','ic',']','of','type',')', 'begin','id',':=','ic','*','ic','end', '$']
+        # # 'id','(','id',')',';','while','(','id',')','do','begin','id',':=','ic','+','ic','*','id',';','end' ,';',
 
     def read_table(self):
         with open('Grammar/table.csv', newline='') as file:
@@ -105,9 +112,7 @@ class Parser:
 
     def parse(self):
         stack = [[0, None]]
-        token = self.tokens[0]
-        self.tokens = self.tokens[1:]
-        # TODO get token
+        token = self.scanner.scan()
         while True:
             top = stack[len(stack) - 1]
             if top[1] is not None:
@@ -115,6 +120,7 @@ class Parser:
             else:
                 temp = token
             act = self.table[top[0]][temp]
+            # print(stack)
             if act[0] == 'ERROR':
                 # TODO handle error
                 print('error')
@@ -123,9 +129,7 @@ class Parser:
                 self.code_gen.CG(act[2], token)
                 top[1] = temp
                 stack.append([int(act[1][1:]), None])
-                token = self.tokens[0]
-                self.tokens = self.tokens[1:]
-                # TODO get token
+                token = self.scanner.scan()
             elif act[0] == 'PUSH_GOTO':
                 self.code_gen.CG(act[2], token)
                 top[1] = temp
@@ -146,7 +150,8 @@ class Parser:
                             break
                         l -= 1
                     if set:
-                        found = len(r)
+                        if len(r) > found:
+                            found = len(r)
                         start = r[0]
                 while found > 0:
                     stack = stack[:len(stack) - 1]
