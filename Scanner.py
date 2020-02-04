@@ -11,15 +11,14 @@ class SymbolData:
         self.size = size
 
 
-symbol_table = dict()
-symbol_table_stack = [symbol_table]
+symbol_table_stack = []
 
 
-def symbol_table_init():
-    symbol_table['boolean'] = SymbolData('boolean', type='boolean', size=1)
-    symbol_table['integer'] = SymbolData('integer', type='integer', size=4)
-    symbol_table['character'] = SymbolData('character', type='character', size=1)
-    symbol_table['real'] = SymbolData('real', type='real', size=4)
+def symbol_table_init(st):
+    st['boolean'] = SymbolData('boolean', type='boolean', size=1)
+    st['integer'] = SymbolData('integer', type='integer', size=4)
+    st['character'] = SymbolData('character', type='character', size=1)
+    st['real'] = SymbolData('real', type='real', size=4)
 
 
 arithmetic_operations = ['+', '*', '&', '^', '|', '%']
@@ -39,12 +38,22 @@ def pass_token(token):
 
 class Scanner:
     def __init__(self):
+        symbol_table = dict()
+        symbol_table_init(symbol_table)
+        symbol_table_stack.append(symbol_table)
         f = open("demofile.txt", "r")
         self.inp = f.read()
-        symbol_table_init()
         self.prev_token = None
         self.const = None
         self.id = None
+
+    def next_token(self):
+        inp = self.inp
+        prev = self.prev_token
+        token = self.scan()
+        self.inp = inp
+        self.prev_token = prev
+        return token
 
     def scan(self):
         while True:
@@ -54,11 +63,13 @@ class Scanner:
             if self.inp[:2] in logical_operations or self.inp[:2] in shitty_characters:
                 token = self.inp[0:2]
                 self.inp = self.inp[2:]
+                self.prev_token = token
                 return token
             elif self.inp[0] in arithmetic_operations or self.inp[0] in logical_operations or self.inp[
                 0] in shitty_characters:
                 token = self.inp[0]
                 self.inp = self.inp[1:]
+                self.prev_token = token
                 return token
 
             elif self.inp[0] == '/':
@@ -67,6 +78,7 @@ class Scanner:
                         self.inp = self.inp[1:]
                 else:
                     self.inp = self.inp[1:]
+                    self.prev_token = '/'
                     return '/'
 
             elif self.inp[0] == '-':
@@ -75,6 +87,7 @@ class Scanner:
                         self.inp = self.inp[1:]
                 else:
                     self.inp = self.inp[1:]
+                    self.prev_token = '-'
                     return '-'
 
             elif self.inp[0] == '<':
@@ -84,12 +97,14 @@ class Scanner:
                     self.inp = self.inp[3:]
                 else:
                     self.inp = self.inp[1:]
+                    self.prev_token = '<'
                     return '<'
 
             elif self.inp[0] == '\'':
                 self.const = self.inp[1]
                 if self.inp[2] == '\'':
                     self.inp = self.inp[3:]
+                    self.prev_token = 'cc'
                     return 'cc'
 
                 else:
@@ -104,16 +119,19 @@ class Scanner:
                 if len(self.inp) == 0:
                     raise SyntaxError
                 self.inp = self.inp[1:]
+                self.prev_token = 'sc'
                 return 'sc'
 
             elif self.inp[:4] == 'true':
                 self.const = True
                 self.inp = self.inp[4:]
+                self.prev_token = 'bc'
                 return 'bc'
 
             elif self.inp[:5] == 'false':
                 self.const = False
                 self.inp = self.inp[5:]
+                self.prev_token = 'bc'
                 return 'bc'
 
             elif self.inp[0] in digits:
@@ -127,6 +145,7 @@ class Scanner:
                             self.const = self.const * 16 + (ord(self.inp[0]) - 55)
                         self.inp = self.inp[1:]
 
+                    self.prev_token = 'ic'
                     return 'ic'
 
                 else:
@@ -141,9 +160,11 @@ class Scanner:
                             self.const = self.const + int(self.inp[0]) * pow(10, po)
                             self.inp = self.inp[1:]
                             po -= 1
+                        self.prev_token = 'rc'
                         return 'rc'
 
                     else:
+                        self.prev_token = 'ic'
                         return 'ic'
 
             elif self.inp[0] in white_spaces:
@@ -154,13 +175,19 @@ class Scanner:
                     if self.inp[:i] in data_types or self.inp[:i] in key_words:
                         token = self.inp[:i]
                         self.inp = self.inp[i:]
+                        self.prev_token = token
                         return token
                 m = re.match(r"([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*", self.inp)
                 if m:
                     self.id = m.group()
                     self.inp = self.inp[len(self.id):]
-                    if self.id not in symbol_table.keys():
-                        symbol_table[self.id] = SymbolData(self.id, None)
+                    if self.id not in symbol_table_stack[-1].keys():
+                        if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
+                            symbol_table_stack[-1][self.id] = SymbolData(self.id, None)
+                        else:
+                            raise NotImplementedError
+
+                    self.prev_token = 'id'
                     return 'id'
                 else:
                     print('=======')
@@ -168,7 +195,9 @@ class Scanner:
                     raise SyntaxError
 
 
-scanner = Scanner()
+# scanner = Scanner()
+# for i in range(100):
+#     print(scanner.scan())
 # character constant: cc
 # string constant: sc
 # bool constant: bc

@@ -1,8 +1,3 @@
-if ahmad then
-begin
-    s=b+c
-end
-
 procedure strlen(sor:integer; ali:string) : character
 begin
     asdef=fasdf+sdf/sadf*sdf
@@ -14,4 +9,9 @@ begin
     garjani
     -->
     -- kire garjan in ghadre .
+endahmad : integer)(())
+if ahmad then
+begin
+    s=b+c
 end
+
