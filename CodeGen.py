@@ -1,4 +1,5 @@
 from Scanner import SymbolData, symbol_table_stack
+import re
 
 
 class CodeGen:
@@ -66,7 +67,7 @@ class CodeGen:
         elif func == '@exit_def_func_mode':
             self.func_mode = False
             self.is_glob = False
-            self.stack[-1] = self.stack[-1][:len(self.stack[-1])-2]
+            self.stack[-1] = self.stack[-1][:len(self.stack[-1]) - 2]
 
         elif func == '@comp_func':
             self.set_type()
@@ -78,7 +79,7 @@ class CodeGen:
         elif func == '@exit_def_proc_mode':
             self.func_mode = False
             self.is_glob = False
-            self.stack[-1] = self.stack[-1][:len(self.stack[-1])-2]
+            self.stack[-1] = self.stack[-1][:len(self.stack[-1]) - 2]
             op = 'define void @' + self.stack[-2] + '(' + \
                  self.stack[-1] + ')'
             self.ops.append(op)
@@ -140,7 +141,7 @@ class CodeGen:
                 else:
                     arr.append((self.stack[-1], False))
                 self.stack = self.stack[-1]
-            for i in range(len(arr)-1, -1, -1):
+            for i in range(len(arr) - 1, -1, -1):
                 if arr[i][1]:
                     cont += ', i32 ' + arr[i][0]
                 else:
@@ -166,29 +167,81 @@ class CodeGen:
                 self.uni = self.uni[:-1]
 
         elif func == '@mult_div_mod':
-            op = self.stack[-2] # * / %
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
-            if op == '*':
-                self.instruction('mul i32', op1, op2)
-            elif op == '/':
-                self.instruction('udiv float', op1, op2)
-            elif op == '%':
-                self.instruction('srem i32', op1, op2)
+            op = self.stack[-2]  # * / %
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
+            type_op1 = None
+            type_op2 = None
+
+            m1 = re.compile("^([0-9])+")
+            m2 = re.compile("^([0-9])+([.])([0-9])+")
+            m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+
+            print(symbol_table_stack[-1].keys())
+            print(symbol_table_stack[-2].keys())
+
+            if m3.match(op1):
+                type_op1 = self.find(op1)
+            elif m1.match(op1):
+                type_op1 = 'integer'
+            elif m2.match(op1):
+                type_op1 = 'float'
+            else:
+                raise TypeError
+
+            if m3.match(op2):
+                type_op2 = self.find(op2)
+            elif m1.match(op2):
+                type_op2 = 'integer'
+            elif m2.match(op2):
+                type_op2 = 'float'
+            else:
+                raise TypeError
+
+            if type_op1 == type_op2:
+                if type_op1 == 'integer':
+                    if op == '*':
+                        self.instruction('mul i32', op1, op2)
+                    elif op == '/':
+                        self.instruction('sdiv i32', op1, op2)
+                    elif op == '%':
+                        self.instruction('srem i32', op1, op2)
+                if type_op1 == 'float':
+                    if op == '*':
+                        self.instruction('fmul float', op1, op2)
+                    elif op == '/':
+                        self.instruction('fdiv float', op1, op2)
+                    elif op == '%':
+                        self.instruction('frem float', op1, op2)
+
+            else:
+                if type_op1 == 'integer':
+                    self.cast(op1,'float')
+                    op1=self.stack.pop(-1)
+                if type_op2 == 'integer':
+                    self.cast(op2,'float')
+                    op2=self.stack.pop(-1)
+                if op == '*':
+                    self.instruction('fmul float', op1, op2)
+                elif op == '/':
+                    self.instruction('fdiv float', op1, op2)
+                elif op == '%':
+                    self.instruction('frem float', op1, op2)
+
 
         elif func == '@plus_minus':
-            op = self.stack[-2] # + -
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
+            op = self.stack[-2]  # + -
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
             if op == '+':
                 self.instruction('add i32', op1, op2)
             elif op == '-':
                 self.instruction('sub i32', op1, op2)
 
         elif func == '@gleq':
-            op = self.stack[-2] # < > <= >=
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
+            op = self.stack[-2]  # < > <= >=
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
             if op == '>':
                 self.instruction('icmp sgt i32', op1, op2)
             elif op == '<':
@@ -199,9 +252,9 @@ class CodeGen:
                 self.instruction('icmp sle i32', op1, op2)
 
         elif func == '@eq':
-            op = self.stack[-2] # == <>
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
+            op = self.stack[-2]  # == <>
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
             if op == '==':
                 self.instruction('icmp eq i32', op1, op2)
             elif op == '<>':
@@ -209,8 +262,8 @@ class CodeGen:
 
         elif func == '@band':
             op = self.stack[-2]  # &
-            op1 = self.stack[-1] # id const
-            op2 = self.stack[-3] # id const
+            op1 = self.stack[-1]  # id const
+            op2 = self.stack[-3]  # id const
             if op == '&':
                 self.instruction('and i32', op1, op2)
 
@@ -397,11 +450,11 @@ class CodeGen:
         self.ops.append('%' + self.unnamed_count + ' = ' + inst + var_const_1 + op1 + ',' + var_const_2 + op2)
         self.stack.append(self.unnamed_count)
         # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
-        self.unnamed_count = '_' + str(int(self.unnamed_count[1:])+1)
+        self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
 
     def find(self, id):
         type = None
-        for i in range(len(symbol_table_stack)-1, -1, -1):
+        for i in range(len(symbol_table_stack) - 1, -1, -1):
             if id in symbol_table_stack[i]:
                 type = symbol_table_stack[i][id].type
                 break
@@ -409,16 +462,21 @@ class CodeGen:
             print('WWWWWTTTTTFFFFF!!!')
             raise KeyError
         return type
-    # TODO cast
-    # def cast(self, type1, type2, id1, id2):
-    #     if type1 == type2 == 'i64':
-    #         return type1
-    #     self.stack.append(self.unnamed_count)
-    #     symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count,
-    #                                                             type=symbol_table_stack[-1][op1].type)
-    #     self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
-    #     if type1 != 'float':
-    #         self.proc.append('')
+
+    def cast(self, type2, id1):
+        if self.find(id1) == 'integer':
+            var_const_1 = ' '
+            try:
+                int(id1)
+            except:
+                var_const_1 = ' %'
+            self.ops.append('%' + self.unnamed_count + ' = ' + 'sitofp' + 'i32' + var_const_1 + id1 + 'to' + type2)
+            self.stack.append(self.unnamed_count)
+
+            symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count,
+                                                                    type=symbol_table_stack[-1][id1].type)
+            self.stack.append(self.unnamed_count)
+            self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
 
     def get_unnamed(self, op):
         ret = self.unnamed_count
