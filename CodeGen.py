@@ -11,18 +11,33 @@ class CodeGen:
         self.scanner = scanner
         self.proc = False
         self.var = None
+        self.uni = []
+        self.bra = True
+        self.begin_block_index = 0
 
     def CG(self, func, token):
-        print('===========')
-        print(func , token)
-        print(symbol_table_stack[0])
+        # print('===========')
+        # print(func , token)
         if func == '@push':
             if token == 'id':
                 self.stack.append(self.scanner.id)
-            elif token == 'ic' or token == 'cc' or token == 'sc' or token == 'rc' or token == 'bc':
-                self.stack.append(str(self.scanner.const))
+            elif token == 'ic' or token == 'cc' or token == 'sc' or token == 'rc' or token == 'bc' or token == 'lc':
+                if len(self.uni) != 0 and self.uni[-1] == '-':
+                    if token == 'ic' or token == 'lc':
+                        self.stack.append(str(-self.scanner.const))
+                        self.uni = self.uni[:-1]
+                elif len(self.uni) != 0 and self.uni == '~':
+                    if token == 'ic' or token == 'lc':
+                        self.stack.append(str(~self.scanner.const))
+                        self.uni = self.uni[:-1]
+                else:
+                    self.stack.append(str(self.scanner.const))
             else:
                 self.stack.append(token)
+
+        elif func == '@ret_id':
+            type = 'i32'
+            self.ops.append('ret ' + type + ' %' + self.scanner.id)
 
         elif func == '@def_var':
             if token == 'TYPE':
@@ -30,6 +45,9 @@ class CodeGen:
 
         elif func == '@def_arr':
             self.def_arr()
+
+        elif func == '@set_type':
+            self.set_type()
 
         elif func == '@init_arr':
             self.stack.append('')
@@ -68,18 +86,84 @@ class CodeGen:
             # TODO add to symbol table and clean stack
 
         elif func == '@in_bra':
-            self.ops.append('{')
+            if self.bra:
+                self.ops.append('{')
+            self.begin_block_index = len(self.stack)
 
         elif func == '@out_bra':
             if self.proc:
                 self.ops.append('ret void')
                 self.proc = False
-            self.ops.append('}')
+            if self.bra:
+                self.ops.append('}')
+            else:
+                self.bra = True
+            self.stack = self.stack[:self.begin_block_index]
+
+        elif func == '@dcl_assign':
+            if token == 'ASSIGNMENT':
+                # type = symbol_table_stack[-1][self.var].type
+                # TODO get type
+                type = 'i32'
+                self.ops.append('store ' + type + ' %' + self.stack[-1] + ', ' + type + '* %' + self.var)
 
         elif func == '@assign':
-            type = symbol_table_stack[-1][self.var].type
+            if token == 'ASSIGNMENT':
+                # type = symbol_table_stack[-1][self.stack[-1]].type
+                # TODO get type
+                type = 'i32'
+                acc = ' '
+                try:
+                    int(self.stack[-1])
+                except:
+                    acc = ' %'
+                self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2])
+
+        elif func == '@access':
+            # TODO get type
             type = 'i32'
-            self.ops.append('store ' + type + ' %' + self.stack[-1] + ', ' + type + '* %' + self.var)
+            cont = ''
+            arr = []
+            while True:
+                num = False
+                try:
+                    int(self.stack[-1])
+                    num = True
+                except:
+                    try:
+                        int(self.stack[-1][1:])
+                    except:
+                        break
+                if num:
+                    arr.append((self.stack[-1], True))
+
+                else:
+                    arr.append((self.stack[-1], False))
+                self.stack = self.stack[-1]
+            for i in range(len(arr)-1, -1, -1):
+                if arr[i][1]:
+                    cont += ', i32 ' + arr[i][0]
+                else:
+                    cont += ', i32 %' + arr[i][0]
+            struct = '%' + self.unnamed_count + ' = getelementptr ' + type + ', ' + type + '* %' + self.stack[-1] \
+                     + ', i32 0' + cont
+            self.ops.append(struct)
+            self.stack = self.stack[:-1]
+            # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
+            self.stack.append(self.unnamed_count)
+            self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+            if len(self.uni) != 0 and self.uni[-1] == '-':
+                self.ops.append('%' + self.unnamed_count + ' = sub ' + type + ' 0, %' + self.stack[-1])
+                self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+                self.stack[-1] = self.unnamed_count
+                # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
+                self.uni = self.uni[:-1]
+            elif len(self.uni) != 0 and self.uni[-1] == '~':
+                self.ops.append('%' + self.unnamed_count + ' = xor i1 1, %' + self.stack[-1])
+                self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+                self.stack[-1] = self.unnamed_count
+                # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
+                self.uni = self.uni[:-1]
 
         elif func == '@mult_div_mod':
             op = self.stack[-2] # * / %
@@ -89,7 +173,7 @@ class CodeGen:
                 self.instruction('mul i32', op1, op2)
             elif op == '/':
                 self.instruction('udiv float', op1, op2)
-            elif op == 'mod':
+            elif op == '%':
                 self.instruction('srem i32', op1, op2)
 
         elif func == '@plus_minus':
@@ -158,8 +242,98 @@ class CodeGen:
             if op == 'or':
                 self.instruction('or i1', op1, op2)
 
-        print(self.stack)
-        print(self.ops)
+        elif func == '@set_uni_not':
+            self.uni.append('~')
+
+        elif func == '@set_uni_neg':
+            self.uni.append('-')
+
+        elif func == '@function_call':
+            index = -1
+            while True:
+                try:
+                    int(self.stack[index])
+                except:
+                    try:
+                        int(self.stack[index][1:])
+                    except:
+                        break
+                index -= 1
+            # TODO fix type
+            type = 'i32'
+            pop_val = index
+            struct = '%' + self.unnamed_count + ' = call ' + type + ' @' + self.stack[index] + '('
+            index += 1
+            while index != 0:
+                type = 'i32'
+                var_type = ' '
+                try:
+                    int(self.stack[index])
+                except:
+                    var_type = ' %'
+                struct += type + var_type + self.stack[index] + ','
+                index += 1
+            self.ops.append(struct[:-1] + ')')
+            self.stack = self.stack[:pop_val]
+            self.stack.append(self.unnamed_count)
+            # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
+            self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+            if len(self.uni) != 0 and self.uni[-1] == '-':
+                self.ops.append('%' + self.unnamed_count + ' = sub ' + type + ' 0, %' + self.stack[-1])
+                self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+                self.stack[-1] = self.unnamed_count
+                # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
+                self.uni = self.uni[:-1]
+            elif len(self.uni) != 0 and self.uni[-1] == '~':
+                self.ops.append('%' + self.unnamed_count + ' = xor i1 1, %' + self.stack[-1])
+                self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+                self.stack[-1] = self.unnamed_count
+                # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
+                self.uni = self.uni[:-1]
+
+        elif func == '@if':
+            self.bra = False
+            struct = 'br i1 %' + self.get_unnamed('') + ', label %'
+            eq1 = self.get_unnamed('label')
+            eq2 = self.get_unnamed('label')
+            struct += eq1 + ', label %' + eq2
+            self.ops.append(struct)
+            self.stack.append(eq2)
+            self.ops.append(eq1 + ':')
+
+        elif func == '@end_if':
+            self.ops.append(self.stack[-1] + ':')
+
+        elif func == '@else':
+            self.bra = False
+            eq = self.get_unnamed('label')
+            top = self.ops[-1]
+            self.ops = self.ops[:-1]
+            self.ops.append('br label %' + eq)
+            self.stack.append(eq)
+            self.ops.append(top)
+
+        elif func == '@end_else':
+            self.ops.append(self.stack[-1] + ':')
+
+        elif func == '@while':
+            self.bra = False
+            here = self.get_unnamed('label')
+            there = self.get_unnamed('label')
+            self.ops.append('br i1 %' + self.stack[-1] + ', label %' + here + ', label %' + there)
+            self.ops.append(here + ':')
+            self.stack.append(here)
+            self.stack.append(there)
+
+        elif func == '@end_while':
+            here = self.stack[-2]
+            there = self.stack[-1]
+            self.stack = self.stack[:-2]
+            self.ops.append('br label %' + here)
+            self.ops.append(there + ':')
+
+        # print(self.stack)
+        # print(self.ops)
 
     def set_type(self):
         type = self.stack[-1]
@@ -245,6 +419,14 @@ class CodeGen:
     #     self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
     #     if type1 != 'float':
     #         self.proc.append('')
+
+    def get_unnamed(self, op):
+        ret = self.unnamed_count
+        if op != 'label':
+            pass
+            # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
+        self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+        return ret
 
     def write(self):
         indent = ''

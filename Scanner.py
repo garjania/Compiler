@@ -23,7 +23,7 @@ def init_scope():
 
 
 arithmetic_operations = ['+', '*', '&', '^', '|', '%']
-logical_operations = ['<=', '>', '>=', '=', '<>', '~']
+logical_operations = ['<=', '>', '>=', '==', '<>', '~']
 shitty_characters = ['(', ')', ',', ';', ':', ':=', '[', ']']
 data_types = ['array', 'boolean', 'integer', 'character', 'real', 'string']
 key_words = ['function', 'procedure', 'begin', 'end', 'return', 'if', 'then', 'else', 'while', 'do', 'and', 'or',
@@ -41,6 +41,7 @@ class Scanner:
         self.const = None
         self.id = None
         self.ignore = False
+        self.scope = None
 
     def next_token(self):
         inp = self.inp
@@ -173,11 +174,13 @@ class Scanner:
                         self.inp = self.inp[i:]
                         self.prev_token = token
                         if token == 'function' or token == 'procedure':
-                            init_scope()
+                            # init_scope()
+                            symbol_table_stack.append(dict(symbol_table_stack[-1]))
                             self.ignore = True
                         if token == 'begin':
                             if self.prev_token == 'then' or self.prev_token == 'do':
-                                init_scope()
+                                # init_scope()
+                                symbol_table_stack.append(dict(symbol_table_stack[-1]))
                         elif token == 'end':
                             symbol_table_stack.pop(-1)
                         return token
@@ -189,14 +192,14 @@ class Scanner:
                         if self.id not in symbol_table_stack[-1].keys():
                             if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
                                 symbol_table_stack[-1][self.id] = SymbolData(self.id)
-                            else:
-                                raise NotImplementedError
+                            # else:
+                            #     raise NotImplementedError
                     else:
                         if self.id not in symbol_table_stack[-2].keys():
                             if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
                                 symbol_table_stack[-2][self.id] = SymbolData(self.id)
-                            else:
-                                raise NotImplementedError
+                            # else:
+                            #     raise NotImplementedError
 
                     self.prev_token = 'id'
                     return 'id'

@@ -40,7 +40,8 @@ class Parser:
                                      ['rc'],
                                      ['cc'],
                                      ['sc'],
-                                     ['bc']],
+                                     ['bc'],
+                                     ['lc']],
                         'EXPR': [['T', 'EP']],
                         'EP': [['or', 'T', 'EP']],
                         'T': [['F', 'TP']],
@@ -116,9 +117,10 @@ class Parser:
                 temp = top[1]
             else:
                 temp = token
+
             act = self.table[top[0]][temp]
-            print(stack)
-            print(act)
+            # print(stack)
+            # print(act)
             if act[0] == 'ERROR':
                 raise SyntaxError
             elif act[0] == 'SHIFT':
