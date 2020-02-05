@@ -1,25 +1,24 @@
 //a:integer
 
-procedure good(b : array [1,2] of real) begin
-b: integer;
-end
+//procedure good(b : array [1,2] of real) begin
+//b: integer;
+//end
 
-function main():integer begin
-f : string := "hello";
-b : array [2] of integer;
+//function hello():integer begin
+//b : array [2,3,4] of integer;
 //a : integer := b[1,1,1];
-c : integer;
-d : integer;
-(c,d, b[1]) := (2, 3*2 + d, 1);
+//c : integer;
+//d : integer;
 //b[-2, 3-4, 2+ 2*3]:=3 *3-4;
 //c := 3 * ~good(-1, 3*3);
 //if(c == c) then begin
-//c := 3 + 2*good(-2,3*-0);
+// := 3 + 2*good(-2,3*-0);
 //end ;
 
-//while(c == c*c + 2 + 3*c) do begin
+//while(c == c*c + 2) do begin
 //c := 1;
 //end;
 //return c;
-end
+//end
 
+a:integer:=3*4
