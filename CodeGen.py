@@ -140,8 +140,8 @@ class CodeGen:
 
                 else:
                     arr.append((self.stack[-1], False))
-                self.stack = self.stack[-1]
-            for i in range(len(arr) - 1, -1, -1):
+                self.stack = self.stack[:-1]
+            for i in range(len(arr)-1, -1, -1):
                 if arr[i][1]:
                     cont += ', i32 ' + arr[i][0]
                 else:
@@ -379,11 +379,36 @@ class CodeGen:
             self.stack.append(there)
 
         elif func == '@end_while':
-            here = self.stack[-2]
+            start = self.stack[-4]
             there = self.stack[-1]
             self.stack = self.stack[:-2]
-            self.ops.append('br label %' + here)
+            self.ops.append('br label %' + start)
             self.ops.append(there + ':')
+
+        elif func == '@start_while':
+            start = self.get_unnamed('label')
+            self.stack.append(start)
+            self.ops.append(start + ':')
+
+        elif func == '@bulk_start':
+            self.stack.append([])
+
+        elif func == '@add_bulk':
+            self.stack[-2].append(self.stack[-1])
+            self.stack = self.stack[:-1]
+
+        elif func == '@assign_bulk':
+            # type = symbol_table_stack[-1][self.stack[-1]].type
+            # TODO get type
+            type = 'i32'
+            acc = ' '
+            try:
+                int(self.stack[-1])
+            except:
+                acc = ' %'
+            self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
+            self.stack = self.stack[:-1]
+            self.stack[-1] = self.stack[-1][1:]
 
         # print(self.stack)
         # print(self.ops)
