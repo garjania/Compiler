@@ -192,8 +192,8 @@ class Scanner:
                         if self.id not in symbol_table_stack[-1].keys():
                             if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
                                 symbol_table_stack[-1][self.id] = SymbolData(self.id)
-                            else:
-                                raise NotImplementedError
+                            # else:
+                            #     raise NotImplementedError
                     else:
                         if self.id not in symbol_table_stack[-2].keys():
                             if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':

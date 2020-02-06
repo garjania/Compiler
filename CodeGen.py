@@ -5,7 +5,7 @@ import re
 class CodeGen:
     def __init__(self, scanner):
         self.stack = []
-        self.ops = []
+        self.ops = ['@.str = private unnamed_addr constant [3 x i8] c"%d\00", align 1', 'declare i32 @scanf(i8*, ...)', 'declare i32 @printf(i8*, ...)']
         self.is_glob = True
         self.func_mode = False
         self.unnamed_count = '_0'
@@ -17,10 +17,12 @@ class CodeGen:
         self.begin_block_index = 0
         self.str_len = 0
         self.arr_point = 0
+        self.is_bulk = False
 
     def CG(self, func, token):
         # print('===========')
-        # print(func , token)
+        # print(func, token)
+        # print(self.stack)
         if func == '@push':
             if token == 'id':
                 self.stack.append(self.scanner.id)
@@ -38,31 +40,39 @@ class CodeGen:
                 if token == 'sc':
                     s_var = self.get_unnamed('')
                     self.str_len = len(self.scanner.const) + 1
-                    self.ops = ['@' + s_var + ' = internal constant [' + str(self.str_len) + ' x i8] c' + '\"' + self.scanner.const + '\\00\"'] + self.ops
+                    self.ops = ['@' + s_var + ' = internal constant [' + str(
+                        self.str_len) + ' x i8] c' + '\"' + self.scanner.const + '\\00\"'] + self.ops
             else:
                 self.stack.append(token)
 
         elif func == '@push_access':
-            #TODO get type
+            print(symbol_table_stack)
+            # TODO get type
             type = 'i32'
-            self.ops.append('%' + self.unnamed_count + ' = getelementptr ' + type + ', ' + type + '* %' + self.scanner.id \
-            + ', i32 0')
-            self.arr_point = len(self.ops)-1
+            sub_type = 'i32'
+            # self.stack.append(self.scanner.id)
+            self.ops.append(
+                '%-' + self.unnamed_count + ' = getelementptr ' + type + ', ' + type + '* %' + self.scanner.id \
+                + ', i32 0')
+            self.arr_point = len(self.ops) - 1
+            name = self.unnamed_count
+            self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
+            self.ops.append('%-' + self.unnamed_count + ' = load '  + sub_type + ', ' + sub_type + '* %-' + name)
             # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
-            self.stack.append(self.unnamed_count)
+            self.stack.append('-' + self.unnamed_count)
             self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
             if len(self.uni) != 0 and self.uni[-1] == '-':
-                self.ops.append('%' + self.unnamed_count + ' = sub ' + type + ' 0, %' + self.scanner.id)
+                self.ops.append('%-' + self.unnamed_count + ' = sub ' + type + ' 0, %' + self.stack[-1])
+                self.stack[-1] = '-' + self.unnamed_count
                 self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
-                self.stack[-1].append(self.unnamed_count)
                 # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
                 self.uni = self.uni[:-1]
             elif len(self.uni) != 0 and self.uni[-1] == '~':
-                self.ops.append('%' + self.unnamed_count + ' = xor i1 1, %' + self.stack[-1])
+                self.ops.append('%-' + self.unnamed_count + ' = xor i1 1, %' + self.stack[-1])
+                self.stack[-1] = '-' + self.unnamed_count
                 self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
-                self.stack[-1].append(self.unnamed_count)
+                self.stack.append(self.unnamed_count)
                 # symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count, type=symbol_table_stack[-1][op1].type)
-                self.uni = self.uni[:-1]
 
         elif func == '@ret_id':
             type = 'i32'
@@ -131,7 +141,7 @@ class CodeGen:
 
         elif func == '@dcl_assign':
             if token == 'ASSIGNMENT':
-                print(self.stack)
+                # print(self.stack)
                 # type = symbol_table_stack[-1][self.var].type
                 # TODO get type
                 type = 'i32'
@@ -163,9 +173,7 @@ class CodeGen:
                     int(self.stack[-1])
                     num = True
                 except:
-                    try:
-                        int(self.stack[-1][1:])
-                    except:
+                    if self.stack[-1][0] != '_':
                         break
                 if num:
                     arr.append((self.stack[-1], True))
@@ -178,52 +186,62 @@ class CodeGen:
                     cont += ', i32 ' + arr[i][0]
                 else:
                     cont += ', i32 %' + arr[i][0]
-
             self.ops[self.arr_point] += cont
-            self.stack = self.stack[:-1]
 
 
         elif func == '@mult_div_mod':
-            op = self.stack[-2]  # * / %
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            type_op1 = None
-            type_op2 = None
+            if len(self.stack) >= 3 and (self.stack[-2] == '*' or self.stack[-2] == '/' or self.stack[-2] == '%'):
+                op = self.stack[-2]  # * / %
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
+                type_op1 = None
+                type_op2 = None
 
-            m1 = re.compile("^([0-9])+")
-            m2 = re.compile("^([0-9])+([.])([0-9])+")
-            m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m1 = re.compile("^([0-9])+")
+                m2 = re.compile("^([0-9])+([.])([0-9])+")
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
 
-            print(symbol_table_stack[-1].keys())
-            print(symbol_table_stack[-2].keys())
+                if m3.match(op1):
+                    type_op1 = self.find(op1)
+                elif m1.match(op1):
+                    type_op1 = 'integer'
+                elif m2.match(op1):
+                    type_op1 = 'float'
+                else:
+                    raise TypeError
 
-            if m3.match(op1):
-                type_op1 = self.find(op1)
-            elif m1.match(op1):
-                type_op1 = 'integer'
-            elif m2.match(op1):
-                type_op1 = 'float'
-            else:
-                raise TypeError
+                if m3.match(op2):
+                    type_op2 = self.find(op2)
+                elif m1.match(op2):
+                    type_op2 = 'integer'
+                elif m2.match(op2):
+                    type_op2 = 'float'
+                else:
+                    raise TypeError
 
-            if m3.match(op2):
-                type_op2 = self.find(op2)
-            elif m1.match(op2):
-                type_op2 = 'integer'
-            elif m2.match(op2):
-                type_op2 = 'float'
-            else:
-                raise TypeError
+                if type_op1 == type_op2:
+                    if type_op1 == 'integer':
+                        if op == '*':
+                            self.instruction('mul i32', op1, op2)
+                        elif op == '/':
+                            self.instruction('sdiv i32', op1, op2)
+                        elif op == '%':
+                            self.instruction('srem i32', op1, op2)
+                    if type_op1 == 'float':
+                        if op == '*':
+                            self.instruction('fmul float', op1, op2)
+                        elif op == '/':
+                            self.instruction('fdiv float', op1, op2)
+                        elif op == '%':
+                            self.instruction('frem float', op1, op2)
 
-            if type_op1 == type_op2:
-                if type_op1 == 'integer':
-                    if op == '*':
-                        self.instruction('mul i32', op1, op2)
-                    elif op == '/':
-                        self.instruction('sdiv i32', op1, op2)
-                    elif op == '%':
-                        self.instruction('srem i32', op1, op2)
-                if type_op1 == 'float':
+                else:
+                    if type_op1 == 'integer':
+                        self.cast(op1, 'float')
+                        op1 = self.stack.pop(-1)
+                    if type_op2 == 'integer':
+                        self.cast(op2, 'float')
+                        op2 = self.stack.pop(-1)
                     if op == '*':
                         self.instruction('fmul float', op1, op2)
                     elif op == '/':
@@ -231,85 +249,75 @@ class CodeGen:
                     elif op == '%':
                         self.instruction('frem float', op1, op2)
 
-            else:
-                if type_op1 == 'integer':
-                    self.cast(op1,'float')
-                    op1=self.stack.pop(-1)
-                if type_op2 == 'integer':
-                    self.cast(op2,'float')
-                    op2=self.stack.pop(-1)
-                if op == '*':
-                    self.instruction('fmul float', op1, op2)
-                elif op == '/':
-                    self.instruction('fdiv float', op1, op2)
-                elif op == '%':
-                    self.instruction('frem float', op1, op2)
-
 
         elif func == '@plus_minus':
-            op = self.stack[-2]  # + -
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == '+':
-                self.instruction('add i32', op1, op2)
-            elif op == '-':
-                self.instruction('sub i32', op1, op2)
+            if len(self.stack) >= 3 and (self.stack[-2] == '+' or self.stack[-2] == '-'):
+                op = self.stack[-2]  # + -
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
+                if op == '+':
+                    self.instruction('add i32', op1, op2)
+                elif op == '-':
+                    self.instruction('sub i32', op1, op2)
 
         elif func == '@gleq':
-            op = self.stack[-2]  # < > <= >=
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == '>':
-                self.instruction('icmp sgt i32', op1, op2)
-            elif op == '<':
-                self.instruction('icmp slt i32', op1, op2)
-            elif op == '>=':
-                self.instruction('icmp sge i32', op1, op2)
-            elif op == '<=':
-                self.instruction('icmp sle i32', op1, op2)
+            if len(self.stack) >= 3 and (
+                    self.stack[-2] == '>' or self.stack[-2] == '<' or self.stack[-2] == '>=' or self.stack[-2] == '<='):
+                op = self.stack[-2]  # < > <= >=
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
+                if op == '>':
+                    self.instruction('icmp sgt i32', op1, op2)
+                elif op == '<':
+                    self.instruction('icmp slt i32', op1, op2)
+                elif op == '>=':
+                    self.instruction('icmp sge i32', op1, op2)
+                elif op == '<=':
+                    self.instruction('icmp sle i32', op1, op2)
 
         elif func == '@eq':
-            op = self.stack[-2]  # == <>
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == '==':
-                self.instruction('icmp eq i32', op1, op2)
-            elif op == '<>':
-                self.instruction('icmp neq i32', op1, op2)
+            if len(self.stack) >= 3 and (self.stack[-2] == '==' or self.stack[-2] == '<>'):
+                op = self.stack[-2]  # == <>
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
+                if op == '==':
+                    self.instruction('icmp eq i32', op1, op2)
+                elif op == '<>':
+                    self.instruction('icmp neq i32', op1, op2)
 
         elif func == '@band':
-            op = self.stack[-2]  # &
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == '&':
+            if len(self.stack) >= 3 and self.stack[-2] == '&':
+                op = self.stack[-2]  # &
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
                 self.instruction('and i32', op1, op2)
 
         elif func == '@bxor':
-            op = self.stack[-2]  # ^
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == '^':
+            if len(self.stack) >= 3 and self.stack[-2] == '^':
+                op = self.stack[-2]  # ^
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
                 self.instruction('xor i32', op1, op2)
 
         elif func == '@bor':
-            op = self.stack[-2]  # bor
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == 'bor':
+            if len(self.stack) >= 3 and self.stack[-2] == 'bor':
+                op = self.stack[-2]  # bor
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
                 self.instruction('or i32', op1, op2)
 
         elif func == '@and':
-            op = self.stack[-2]  # and
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == 'and':
+            if len(self.stack) >= 3 and self.stack[-2] == 'and':
+                op = self.stack[-2]  # and
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
                 self.instruction('and i1', op1, op2)
 
         elif func == '@or':
-            op = self.stack[-2]  # or
-            op1 = self.stack[-1]  # id const
-            op2 = self.stack[-3]  # id const
-            if op == 'or':
+            if len(self.stack) >= 3 and self.stack[-2] == 'or':
+                op = self.stack[-2]  # or
+                op1 = self.stack[-1]  # id const
+                op2 = self.stack[-3]  # id const
                 self.instruction('or i1', op1, op2)
 
         elif func == '@set_uni_not':
@@ -321,12 +329,11 @@ class CodeGen:
         elif func == '@function_call':
             index = -1
             while True:
+                print(self.stack)
                 try:
                     int(self.stack[index])
                 except:
-                    try:
-                        int(self.stack[index][1:])
-                    except:
+                    if self.stack[index][0] != '_':
                         break
                 index -= 1
             # TODO fix type
@@ -407,6 +414,9 @@ class CodeGen:
             self.stack.append(start)
             self.ops.append(start + ':')
 
+        elif func == '@set_bulk':
+            self.is_bulk = True
+
         elif func == '@bulk_start':
             self.stack.append([])
 
@@ -415,17 +425,19 @@ class CodeGen:
             self.stack = self.stack[:-1]
 
         elif func == '@assign_bulk':
-            # type = symbol_table_stack[-1][self.stack[-1]].type
-            # TODO get type
-            type = 'i32'
-            acc = ' '
-            try:
-                int(self.stack[-1])
-            except:
-                acc = ' %'
-            self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
-            self.stack = self.stack[:-1]
-            self.stack[-1] = self.stack[-1][1:]
+            if self.is_bulk:
+                # type = symbol_table_stack[-1][self.stack[-1]].type
+                # TODO get type
+                type = 'i32'
+                acc = ' '
+                try:
+                    int(self.stack[-1])
+                except:
+                    acc = ' %'
+                self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
+                self.stack = self.stack[:-1]
+                self.stack[-1] = self.stack[-1][1:]
+                self.is_bulk = False
 
         # print(self.stack)
         # print(self.ops)
@@ -441,9 +453,7 @@ class CodeGen:
                 int(self.stack[-1])
                 num = True
             except:
-                try:
-                    int(self.stack[-1][1:])
-                except:
+                if (self.stack[-1][0] != '_'):
                     break
             if num:
                 arr.append((self.stack[-1], True))
