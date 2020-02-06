@@ -595,7 +595,7 @@ class CodeGen:
                     ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
             else:
                 self.ops.append(
-                    'call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @' + inp +
+                    'call i32 (i8*, ...) @printf(i8* getelementptr inbounds (' + sym.type + ', ' + sym.type +'* @' + inp +
                     ', i32 0, i32 0)')
 
     def write(self):
