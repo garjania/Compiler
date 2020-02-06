@@ -166,7 +166,7 @@ class CodeGen:
                 elif m2.match(op1):
                     type_op1 = 'float'
                 elif m1.match(op1):
-                    type_op1 = 'integer'
+                    type_op1 = 'i32'
                 else:
                     raise TypeError
 
@@ -175,12 +175,14 @@ class CodeGen:
                 elif m2.match(op2):
                     type_op2 = 'float'
                 elif m1.match(op2):
-                    type_op2 = 'integer'
+                    type_op2 = 'i32'
                 else:
                     raise TypeError
 
+                print(type_op1,type_op2)
+
                 if type_op1 == type_op2:
-                    if type_op1 == 'integer':
+                    if type_op1 == 'i32':
                         if op == '*':
                             self.instruction('mul i32', op1, op2)
                         elif op == '/':
@@ -196,10 +198,10 @@ class CodeGen:
                             self.instruction('frem float', op1, op2)
 
                 else:
-                    if type_op1 == 'integer':
+                    if type_op1 == 'i32':
                         self.cast('float', op1)
                         op1 = self.stack.pop(-1)
-                    if type_op2 == 'integer':
+                    if type_op2 == 'i32':
                         self.cast('float', op2)
                         op2 = self.stack.pop(-1)
                     if op == '*':
@@ -532,25 +534,20 @@ class CodeGen:
         return None
 
     def cast(self, type2, id1):
-        # print(id1)
         var_const_1 = ' '
-        type_in_llvm = None
-        if type2 == 'float':
-            type_in_llvm = 'float'
         try:
             type = self.find(id1)
             var_const_1 = ' %'
         except KeyError:
             try:
                 int(id1)
-                type = 'integer'
+                type = 'i32'
             except ValueError:
                 type = 'float'
 
-        # print(type)
-        if type == 'integer':
+        if type == 'i32':
             self.ops.append(
-                '%' + self.unnamed_count + ' = ' + 'sitofp' + ' i32' + var_const_1 + id1 + 'to' + type_in_llvm)
+                '%' + self.unnamed_count + ' = ' + ' sitofp' + ' i32' + var_const_1 + id1 + ' to ' + type2)
             self.stack.append(self.unnamed_count)
 
             symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count,

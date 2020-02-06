@@ -10,7 +10,8 @@ define void @good([1 x [2 x float]] %b)
 	%c = alloca float
 	%_0 = load i32, i32* %a
 	%_1 = load float, float* %d
-	%_2 = fmul float %_1, %_0
-	store float %_2, float* %c
+	%_2 =  sitofp i32 %_0 to float
+	%_3 = fmul float %_1, %_2
+	store float %_3, float* %c
 	ret void
 }
