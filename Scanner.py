@@ -147,10 +147,10 @@ class Scanner:
 
                 else:
                     self.const = 0
-                    while len(self.inp)>0 and self.inp[0] in digits:
+                    while len(self.inp) > 0 and self.inp[0] in digits:
                         self.const = self.const * 10 + int(self.inp[0])
                         self.inp = self.inp[1:]
-                    if len(self.inp)>0 and self.inp[0] == '.':
+                    if len(self.inp) > 0 and self.inp[0] == '.':
                         self.inp = self.inp[1:]
                         po = -1
                         while self.inp[0] in digits:
@@ -175,12 +175,10 @@ class Scanner:
                         self.prev_token = token
                         if token == 'function' or token == 'procedure':
                             init_scope()
-                            # symbol_table_stack.append(dict(symbol_table_stack[-1]))
                             self.ignore = True
                         if token == 'begin':
                             if self.prev_token == 'then' or self.prev_token == 'do':
                                 init_scope()
-                                # symbol_table_stack.append(dict(symbol_table_stack[-1]))
                         elif token == 'end':
                             symbol_table_stack.pop(-1)
                         return token
@@ -189,17 +187,39 @@ class Scanner:
                     self.id = m.group()
                     self.inp = self.inp[len(self.id):]
                     if not self.ignore:
-                        if self.id not in symbol_table_stack[-1].keys():
-                            if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
-                                symbol_table_stack[-1][self.id] = SymbolData(self.id)
-                            # else:
-                            #     raise NotImplementedError
-                    else:
-                        if self.id not in symbol_table_stack[-2].keys():
-                            if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
-                                symbol_table_stack[-2][self.id] = SymbolData(self.id)
+                        flag = False
+                        for sym_tab in symbol_table_stack:
+                            if self.id in sym_tab.keys():
+                                flag = True
+
+                        if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
+                            print(symbol_table_stack[-1].keys())
+                            print(symbol_table_stack[-2].keys())
+                            print(self.id)
+                            print(self.next_token())
+                            print(self.prev_token)
+                            if self.id in symbol_table_stack[-1].keys():
+                                raise Exception
                             else:
-                                raise NotImplementedError
+                                symbol_table_stack[-1][self.id] = SymbolData(self.id)
+                                flag = True
+                        if not flag:
+                            raise NotImplementedError
+                    else:
+
+                        flag = False
+                        for sym_tab in symbol_table_stack[:-1]:
+                            if self.id in sym_tab.keys():
+                                flag = True
+
+                        if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
+                            if self.id in symbol_table_stack[-2].keys():
+                                raise Exception
+                            else:
+                                symbol_table_stack[-2][self.id] = SymbolData(self.id)
+                                flag = True
+                        if not flag:
+                            raise NotImplementedError
 
                     self.prev_token = 'id'
                     return 'id'
