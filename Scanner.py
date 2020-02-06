@@ -193,11 +193,11 @@ class Scanner:
                                 flag = True
 
                         if self.next_token() == ':' or self.prev_token == 'function' or self.prev_token == 'procedure':
-                            print(symbol_table_stack[-1].keys())
-                            print(symbol_table_stack[-2].keys())
-                            print(self.id)
-                            print(self.next_token())
-                            print(self.prev_token)
+                            # print(symbol_table_stack[-1].keys())
+                            # print(symbol_table_stack[-2].keys())
+                            # print(self.id)
+                            # print(self.next_token())
+                            # print(self.prev_token)
                             if self.id in symbol_table_stack[-1].keys():
                                 raise Exception
                             else:
