@@ -2,12 +2,14 @@ import re
 
 
 class SymbolData:
-    def __init__(self, name, type=None, value=None, size=None):
+    def __init__(self, name, type=None, size=None, function=False):
         self.name = name
         self.type = type
-        self.value = value
+        self.glob_loc = '%'
         self.array = False
+        self.function = function
         self.size = size
+        self.is_string = False
 
 
 symbol_table_stack = []
@@ -15,10 +17,13 @@ symbol_table_stack = []
 
 def init_scope():
     symbol_table = dict()
-    symbol_table['boolean'] = SymbolData('boolean', type='boolean', size=1)
-    symbol_table['integer'] = SymbolData('integer', type='integer', size=4)
-    symbol_table['character'] = SymbolData('character', type='character', size=1)
-    symbol_table['real'] = SymbolData('real', type='real', size=4)
+    symbol_table['boolean'] = SymbolData('boolean', type='i1', size=1)
+    symbol_table['integer'] = SymbolData('integer', type='i32', size=4)
+    symbol_table['character'] = SymbolData('character', type='i8', size=1)
+    symbol_table['real'] = SymbolData('real', type='float', size=4)
+    symbol_table['read'] = SymbolData('read', type='void', size=4, function=True)
+    symbol_table['write'] = SymbolData('write', type='void', size=4, function=True)
+    symbol_table['strlen'] = SymbolData('strlen', type='i32', size=4, function=True)
     symbol_table_stack.append(symbol_table)
 
 

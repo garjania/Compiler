@@ -22,7 +22,7 @@ class Parser:
                                  ['string'],
                                  ['boolean']],
                         'BLOCK': [['begin', 'STMT_LOOP', 'end']],
-                        'STMT': [['return', 'id'],
+                        'STMT': [['return', 'EXPR'],
                                  ['CONDITIONAL'],
                                  ['(', 'ID', ',', 'ID', 'ID_LOOP', ')', 'BULK_ASSIGNMENT'],
                                  ['id', 'STMT_ID'],
