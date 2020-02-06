@@ -34,7 +34,9 @@ class CodeGen:
             self.assign = True
             if not sym.array and not sym.function:
                 name = self.get_unnamed(sym.type)
-                self.ops.append(sym.glob_loc + name + ' = load ' + sym.type + ', ' + sym.type +  '* ' + sym.glob_loc + self.stack[-1])
+                self.ops.append(
+                    sym.glob_loc + name + ' = load ' + sym.type + ', ' + sym.type + '* ' + sym.glob_loc + self.stack[
+                        -1])
                 self.stack[-1] = name
                 self.handle_uni()
 
@@ -145,32 +147,35 @@ class CodeGen:
 
 
         elif func == '@mult_div_mod':
+            print(self.stack)
             if len(self.stack) >= 3 and (self.stack[-2] == '*' or self.stack[-2] == '/' or self.stack[-2] == '%'):
                 op = self.stack[-2]  # * / %
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+                print(op1, op2)
                 type_op1 = None
                 type_op2 = None
 
                 m1 = re.compile("^([0-9])+")
                 m2 = re.compile("^([0-9])+([.])([0-9])+")
                 m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
 
-                if m3.match(op1):
+                if m3.match(op1) or m4.match(op1):
                     type_op1 = self.find(op1)
-                elif m1.match(op1):
-                    type_op1 = 'integer'
                 elif m2.match(op1):
                     type_op1 = 'float'
+                elif m1.match(op1):
+                    type_op1 = 'integer'
                 else:
                     raise TypeError
 
-                if m3.match(op2):
+                if m3.match(op2) or m4.match(op2):
                     type_op2 = self.find(op2)
-                elif m1.match(op2):
-                    type_op2 = 'integer'
                 elif m2.match(op2):
                     type_op2 = 'float'
+                elif m1.match(op2):
+                    type_op2 = 'integer'
                 else:
                     raise TypeError
 
@@ -192,10 +197,10 @@ class CodeGen:
 
                 else:
                     if type_op1 == 'integer':
-                        self.cast(op1, 'float')
+                        self.cast('float', op1)
                         op1 = self.stack.pop(-1)
                     if type_op2 == 'integer':
-                        self.cast(op2, 'float')
+                        self.cast('float', op2)
                         op2 = self.stack.pop(-1)
                     if op == '*':
                         self.instruction('fmul float', op1, op2)
@@ -527,17 +532,29 @@ class CodeGen:
         return None
 
     def cast(self, type2, id1):
-        if self.find(id1) == 'integer':
-            var_const_1 = ' '
+        # print(id1)
+        var_const_1 = ' '
+        type_in_llvm = None
+        if type2 == 'float':
+            type_in_llvm = 'float'
+        try:
+            type = self.find(id1)
+            var_const_1 = ' %'
+        except KeyError:
             try:
                 int(id1)
-            except:
-                var_const_1 = ' %'
-            self.ops.append('%' + self.unnamed_count + ' = ' + 'sitofp' + 'i32' + var_const_1 + id1 + 'to' + type2)
+                type = 'integer'
+            except ValueError:
+                type = 'float'
+
+        # print(type)
+        if type == 'integer':
+            self.ops.append(
+                '%' + self.unnamed_count + ' = ' + 'sitofp' + ' i32' + var_const_1 + id1 + 'to' + type_in_llvm)
             self.stack.append(self.unnamed_count)
 
             symbol_table_stack[-1][self.unnamed_count] = SymbolData(self.unnamed_count,
-                                                                    type=symbol_table_stack[-1][id1].type)
+                                                                    type=type2)
             self.stack.append(self.unnamed_count)
             self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
 
@@ -576,8 +593,9 @@ class CodeGen:
             inp = self.stack[index + 1]
             sym = self.search(inp)
             if not sym.is_string:
-                self.ops.append('call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
-                                ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
+                self.ops.append(
+                    'call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
+                    ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
             else:
                 self.ops.append(
                     'call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @' + inp +

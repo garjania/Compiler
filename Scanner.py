@@ -187,7 +187,7 @@ class Scanner:
                         elif token == 'end':
                             symbol_table_stack.pop(-1)
                         return token
-                m = re.match(r"([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*", self.inp)
+                m = re.match(r"([A-Z]|[a-z])+([A-Z]|[0-9]|[_]|[a-z])*", self.inp)
                 if m:
                     self.id = m.group()
                     self.inp = self.inp[len(self.id):]
