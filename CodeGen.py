@@ -171,6 +171,7 @@ class CodeGen:
                 acc = ' '
                 type = self.search(self.stack[-2]).type
                 sym = self.search(self.stack[-2])
+                var = self.stack[-2]
                 if sym is None or not sym.is_string:
                     try:
                         if self.find(self.stack[-1]) != type:
@@ -185,13 +186,13 @@ class CodeGen:
                                 self.cast('i32', self.stack[-1])
                             if type != 'i32':
                                 self.cast(type, self.stack[-1])
-                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2])
+                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
                     sym.size = str_sym.type
                     self.ops.append(
                         'store ' + sym.size + '* getelementptr inbounds (' + sym.size + ', ' + sym.size + '* @' +
-                        self.stack[-1] + ', i32 0), ' + sym.size + '** ' + sym.glob_loc + self.stack[-2])
+                        self.stack[-1] + ', i32 0), ' + sym.size + '** ' + sym.glob_loc + var)
                     self.ops[sym.allocate_point] = '%' + self.stack[-2] + ' = alloca ' + sym.size + '*'
 
         elif func == '@assign_bulk':
@@ -200,6 +201,7 @@ class CodeGen:
                 print(self.stack)
                 type = self.search(self.stack[-2][0]).type
                 sym = self.search(self.stack[-2][0])
+                var = self.stack[-2][0]
                 if sym is None or not sym.is_string:
                     try:
                         if self.find(self.stack[-1]) != type:
@@ -214,7 +216,7 @@ class CodeGen:
                                 self.cast('i32', self.stack[-1])
                             if type != 'i32':
                                 self.cast(type, self.stack[-1])
-                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
+                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
                     sym.size = str_sym.type
@@ -224,19 +226,6 @@ class CodeGen:
                     self.ops[sym.allocate_point] = '%' + self.stack[-2][0] + ' = alloca ' + sym.size + '*'
                 self.stack = self.stack[:-1]
                 self.stack[-1] = self.stack[-1][1:]
-
-            # if self.is_bulk:
-            #     # TODO get type
-            #     type = 'i32'
-            #     acc = ' '
-            #     try:
-            #         int(self.stack[-1])
-            #     except:
-            #         acc = ' %'
-            #         type = self.search(self.stack[-1]).type
-            #     self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
-            #     self.stack = self.stack[:-1]
-            #     self.stack[-1] = self.stack[-1][1:]
 
         elif func == '@access':
             self.access()
@@ -414,20 +403,35 @@ class CodeGen:
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
 
-                if self.search(op1) is not None:
-                    type = self.search(op1).type
-                elif self.search(op2) is not None:
-                    type = self.search(op2).type
-                else:
-                    m1 = re.compile("^([0-9])+")
-                    m2 = re.compile("^([0-9])+([.])([0-9])+")
-                    if m1.match(op1):
-                        type = 'i32'
-                    elif m2.match(op1):
-                        type = 'float'
-                    else:
-                        type = 'i1'
+                m1 = re.compile("^([0-9])+")
+                m2 = re.compile("^([0-9])+([.])([0-9])+")
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
 
+                if m3.match(op1) or m4.match(op1):
+                    type_op1 = self.find(op1)
+                else:
+                    type_op1 = self.type_of_const(op1)
+
+                if type_op1 != 'i64':
+                    if type_op1 != 'i32':
+                        self.cast('i32', op1)
+                        op1 = self.stack.pop(-1)
+                    self.cast('i64', op1)
+                    op1 = self.stack.pop(-1)
+
+                if m3.match(op2) or m4.match(op2):
+                    type_op2 = self.find(op2)
+                else:
+                    type_op2 = self.type_of_const(op2)
+
+                if type_op2 != 'i64':
+                    if type_op2 != 'i32':
+                        self.cast('i32', op2)
+                        op2 = self.stack.pop(-1)
+                    self.cast('i64', op2)
+                    op2 = self.stack.pop(-1)
+                type = 'i64'
                 if op == '>':
                     self.instruction('icmp slt ' + type, op1, op2)
                 elif op == '<':
@@ -443,12 +447,33 @@ class CodeGen:
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
 
-                if self.search(op1) is not None:
-                    type = self.search(op1).type
-                elif self.search(op2) is not None:
-                    type = self.search(op2).type
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
+
+                if m3.match(op1) or m4.match(op1):
+                    type_op1 = self.find(op1)
                 else:
-                    type = 'i1'
+                    type_op1 = self.type_of_const(op1)
+
+                if type_op1 != 'i64':
+                    if type_op1 != 'i32':
+                        self.cast('i32', op1)
+                        op1 = self.stack.pop(-1)
+                    self.cast('i64', op1)
+                    op1 = self.stack.pop(-1)
+
+                if m3.match(op2) or m4.match(op2):
+                    type_op2 = self.find(op2)
+                else:
+                    type_op2 = self.type_of_const(op2)
+
+                if type_op2 != 'i64':
+                    if type_op2 != 'i32':
+                        self.cast('i32', op2)
+                        op2 = self.stack.pop(-1)
+                    self.cast('i64', op2)
+                    op2 = self.stack.pop(-1)
+                type = 'i64'
 
                 if op == '==':
                     self.instruction('icmp eq ' + type, op1, op2)
@@ -460,13 +485,33 @@ class CodeGen:
                 op = self.stack[-2]  # &
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
 
-                if self.search(op1) is not None:
-                    type = self.search(op1).type
-                elif self.search(op2) is not None:
-                    type = self.search(op2).type
+                if m3.match(op1) or m4.match(op1):
+                    type_op1 = self.find(op1)
                 else:
-                    type = 'i1'
+                    type_op1 = self.type_of_const(op1)
+
+                if type_op1 != 'i64':
+                    if type_op1 != 'i32':
+                        self.cast('i32', op1)
+                        op1 = self.stack.pop(-1)
+                    self.cast('i64', op1)
+                    op1 = self.stack.pop(-1)
+
+                if m3.match(op2) or m4.match(op2):
+                    type_op2 = self.find(op2)
+                else:
+                    type_op2 = self.type_of_const(op2)
+
+                if type_op2 != 'i64':
+                    if type_op2 != 'i32':
+                        self.cast('i32', op2)
+                        op2 = self.stack.pop(-1)
+                    self.cast('i64', op2)
+                    op2 = self.stack.pop(-1)
+                type = 'i64'
 
                 self.instruction('and ' + type, op1, op2)
 
@@ -475,13 +520,33 @@ class CodeGen:
                 op = self.stack[-2]  # ^
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
 
-                if self.search(op1) is not None:
-                    type = self.search(op1).type
-                elif self.search(op2) is not None:
-                    type = self.search(op2).type
+                if m3.match(op1) or m4.match(op1):
+                    type_op1 = self.find(op1)
                 else:
-                    type = 'i1'
+                    type_op1 = self.type_of_const(op1)
+
+                if type_op1 != 'i64':
+                    if type_op1 != 'i32':
+                        self.cast('i32', op1)
+                        op1 = self.stack.pop(-1)
+                    self.cast('i64', op1)
+                    op1 = self.stack.pop(-1)
+
+                if m3.match(op2) or m4.match(op2):
+                    type_op2 = self.find(op2)
+                else:
+                    type_op2 = self.type_of_const(op2)
+
+                if type_op2 != 'i64':
+                    if type_op2 != 'i32':
+                        self.cast('i32', op2)
+                        op2 = self.stack.pop(-1)
+                    self.cast('i64', op2)
+                    op2 = self.stack.pop(-1)
+                type = 'i64'
 
                 self.instruction('xor ' + type, op1, op2)
 
@@ -490,13 +555,33 @@ class CodeGen:
                 op = self.stack[-2]  # bor
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
 
-                if self.search(op1) is not None:
-                    type = self.search(op1).type
-                elif self.search(op2) is not None:
-                    type = self.search(op2).type
+                if m3.match(op1) or m4.match(op1):
+                    type_op1 = self.find(op1)
                 else:
-                    type = 'i1'
+                    type_op1 = self.type_of_const(op1)
+
+                if type_op1 != 'i64':
+                    if type_op1 != 'i32':
+                        self.cast('i32', op1)
+                        op1 = self.stack.pop(-1)
+                    self.cast('i64', op1)
+                    op1 = self.stack.pop(-1)
+
+                if m3.match(op2) or m4.match(op2):
+                    type_op2 = self.find(op2)
+                else:
+                    type_op2 = self.type_of_const(op2)
+
+                if type_op2 != 'i64':
+                    if type_op2 != 'i32':
+                        self.cast('i32', op2)
+                        op2 = self.stack.pop(-1)
+                    self.cast('i64', op2)
+                    op2 = self.stack.pop(-1)
+                type = 'i64'
 
                 self.instruction('or ' + type, op1, op2)
 
@@ -505,13 +590,33 @@ class CodeGen:
                 op = self.stack[-2]  # and
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
 
-                if self.search(op1) is not None:
-                    type = self.search(op1).type
-                elif self.search(op2) is not None:
-                    type = self.search(op2).type
+                if m3.match(op1) or m4.match(op1):
+                    type_op1 = self.find(op1)
                 else:
-                    type = 'i1'
+                    type_op1 = self.type_of_const(op1)
+
+                if type_op1 != 'i1':
+                    if type_op1 != 'i32':
+                        self.cast('i32', op1)
+                        op1 = self.stack.pop(-1)
+                    self.cast('i1', op1)
+                    op1 = self.stack.pop(-1)
+
+                if m3.match(op2) or m4.match(op2):
+                    type_op2 = self.find(op2)
+                else:
+                    type_op2 = self.type_of_const(op2)
+
+                if type_op2 != 'i1':
+                    if type_op2 != 'i32':
+                        self.cast('i32', op2)
+                        op2 = self.stack.pop(-1)
+                    self.cast('i1', op2)
+                    op2 = self.stack.pop(-1)
+                type = 'i1'
 
                 self.instruction('and ' + type, op1, op2)
 
@@ -520,13 +625,33 @@ class CodeGen:
                 op = self.stack[-2]  # or
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+                m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
+                m4 = re.compile("^([_])([0-9])+")
 
-                if self.search(op1) is not None:
-                    type = self.search(op1).type
-                elif self.search(op2) is not None:
-                    type = self.search(op2).type
+                if m3.match(op1) or m4.match(op1):
+                    type_op1 = self.find(op1)
                 else:
-                    type = 'i1'
+                    type_op1 = self.type_of_const(op1)
+
+                if type_op1 != 'i1':
+                    if type_op1 != 'i32':
+                        self.cast('i32', op1)
+                        op1 = self.stack.pop(-1)
+                    self.cast('i1', op1)
+                    op1 = self.stack.pop(-1)
+
+                if m3.match(op2) or m4.match(op2):
+                    type_op2 = self.find(op2)
+                else:
+                    type_op2 = self.type_of_const(op2)
+
+                if type_op2 != 'i1':
+                    if type_op2 != 'i32':
+                        self.cast('i32', op2)
+                        op2 = self.stack.pop(-1)
+                    self.cast('i1', op2)
+                    op2 = self.stack.pop(-1)
+                type = 'i1'
 
                 self.instruction('or ' + type, op1, op2)
 
