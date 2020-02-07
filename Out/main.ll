@@ -1,4 +1,4 @@
-@_18 = internal constant [13 x i8] c"not equal ! \00"
+@_13 = internal constant [13 x i8] c"not equal ! \00"
 @.i32 = private unnamed_addr constant [3 x i8] c"%d\00" 
 @.i8 = private unnamed_addr constant [3 x i8] c"%c\00" 
 @.i64 = private unnamed_addr constant [3 x i8] c"%f\00" 
@@ -20,21 +20,15 @@ define i32 @main()
 	%_4 =  zext i32 %_0 to i64
 	%_5 =  sitofp i64 %_4 to float
 	%_6 = fdiv float %_3, %_5
-	%_7 =  zext i32 %_0 to i64
-	%_8 =  sitofp i64 %_7 to float
-	%_9 = fdiv float %_6, %_8
-	%_10 =  fptosi float %_9 to i64
-	%_11 =  trunc i64 %_10 to i32
-	asdfasdfs
-	store i32 %_11, i32* %_0
-	%_12 = load float, float* %c
-	%_13 =  zext i32 1 to i64
-	%_14 =  fptosi float %_12 to i64
-	%_15 = icmp ne i64 %_13, %_14
-	br i1 %_15, label %_16, label %_17
-	_16:
-	call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @_18, i32 0, i32 0))
-	br label %_17
-	_17:
+	store float %_6, float* %c
+	%_7 = load float, float* %c
+	%_8 =  zext i32 1 to i64
+	%_9 =  fptosi float %_7 to i64
+	%_10 = icmp ne i64 %_8, %_9
+	br i1 %_10, label %_11, label %_12
+	_11:
+	call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @_13, i32 0, i32 0))
+	br label %_12
+	_12:
 	ret i32 0
 }

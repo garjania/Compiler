@@ -191,7 +191,7 @@ class CodeGen:
                                 self.cast('i64', self.stack[-1])
                             if type != 'i64':
                                 self.cast(type, self.stack[-1])
-                    self.ops.append('asdfasdfs')
+                    # self.ops.append('asdfasdfs')
                     self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
@@ -263,7 +263,7 @@ class CodeGen:
                 if type_op1 != 'float':
                     if self.find(op1) != 'i64':
                         self.cast('i64', op1)
-                        op1 = self.stack[-1]
+                        op1 = self.stack.pop(-1)
                     self.cast('float', op1)
                     op1 = self.stack.pop(-1)
 
@@ -278,11 +278,11 @@ class CodeGen:
                 #         type_op2 = 'i32'
                 else:
                     type_op2 = self.type_of_const(op2)
-
+                print('hoooy',op2,op1)
                 if type_op2 != 'i64':
                     if self.find(op2) != 'i64':
                         self.cast('i64', op2)
-                        op2 = self.stack[-1]
+                        op2 = self.stack.pop(-1)
                     self.cast('float', op2)
                     op2 = self.stack.pop(-1)
                 if op == '*':
