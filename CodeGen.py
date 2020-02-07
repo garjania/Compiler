@@ -258,7 +258,10 @@ class CodeGen:
                 elif m2.match(op1):
                     type_op1 = 'float'
                 elif m1.match(op1):
-                    type_op1 = 'i32'
+                    if abs(op1) > 128:
+                        type_op1 = 'i64'
+                    else:
+                        type_op1 = 'i32'
                 else:
                     raise TypeError
 
@@ -267,13 +270,21 @@ class CodeGen:
                 elif m2.match(op2):
                     type_op2 = 'float'
                 elif m1.match(op2):
-                    type_op2 = 'i32'
+                    if abs(op2) > 128:
+                        type_op2 = 'i64'
+                    else:
+                        type_op2 = 'i32'
                 else:
                     raise TypeError
 
-                # print(type_op1,type_op2)
-
                 if type_op1 == type_op2:
+                    if type_op1 == 'i64':
+                        if op == '*':
+                            self.instruction('mul i64', op1, op2)
+                        elif op == '/':
+                            self.instruction('sdiv i64', op1, op2)
+                        elif op == '%':
+                            self.instruction('srem i64', op1, op2)
                     if type_op1 == 'i32':
                         if op == '*':
                             self.instruction('mul i32', op1, op2)
@@ -290,21 +301,36 @@ class CodeGen:
                             self.instruction('frem float', op1, op2)
 
                 else:
-                    if type_op1 == 'i32':
-                        self.cast('float', op1)
-                        op1 = self.stack.pop(-1)
-                    if type_op2 == 'i32':
-                        self.cast('float', op2)
-                        op2 = self.stack.pop(-1)
-                    if op == '*':
-                        self.instruction('fmul float', op1, op2)
-                    elif op == '/':
-                        self.instruction('fdiv float', op1, op2)
-                    elif op == '%':
-                        self.instruction('frem float', op1, op2)
+                    if type_op1 == 'float' or type_op2 == 'float':
+                        if type_op1 != 'float':
+                            self.cast('float', op1)
+                            op1 = self.stack.pop(-1)
+                        if type_op2 != 'float':
+                            self.cast('float', op2)
+                            op2 = self.stack.pop(-1)
+                        if op == '*':
+                            self.instruction('fmul float', op1, op2)
+                        elif op == '/':
+                            self.instruction('fdiv float', op1, op2)
+                        elif op == '%':
+                            self.instruction('frem float', op1, op2)
+                    else:
+                        if type_op1 != 'i32':
+                            self.cast('i64', op1)
+                            op1 = self.stack.pop(-1)
+                        if type_op2 != 'i32':
+                            self.cast('i64', op2)
+                            op2 = self.stack.pop(-1)
+                        if op == '*':
+                            self.instruction('mul i64', op1, op2)
+                        elif op == '/':
+                            self.instruction('div i64', op1, op2)
+                        elif op == '%':
+                            self.instruction('rem i64', op1, op2)
 
         elif func == '@plus_minus':
             if len(self.stack) >= 3 and (self.stack[-2] == '+' or self.stack[-2] == '-'):
+
                 op = self.stack[-2]  # * / %
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
@@ -320,7 +346,10 @@ class CodeGen:
                 elif m2.match(op1):
                     type_op1 = 'float'
                 elif m1.match(op1):
-                    type_op1 = 'i32'
+                    if abs(op1) > 128:
+                        type_op1 = 'i64'
+                    else:
+                        type_op1 = 'i32'
                 else:
                     raise TypeError
 
@@ -329,13 +358,19 @@ class CodeGen:
                 elif m2.match(op2):
                     type_op2 = 'float'
                 elif m1.match(op2):
-                    type_op2 = 'i32'
+                    if abs(op2) > 128:
+                        type_op2 = 'i64'
+                    else:
+                        type_op2 = 'i32'
                 else:
                     raise TypeError
 
-                print(type_op1, type_op2)
-
                 if type_op1 == type_op2:
+                    if type_op1 == 'i64':
+                        if op == '+':
+                            self.instruction('add i64', op1, op2)
+                        elif op == '-':
+                            self.instruction('sub i64', op1, op2)
                     if type_op1 == 'i32':
                         if op == '+':
                             self.instruction('add i32', op1, op2)
@@ -348,16 +383,29 @@ class CodeGen:
                             self.instruction('fsub float', op1, op2)
 
                 else:
-                    if type_op1 == 'i32':
-                        self.cast('float', op1)
-                        op1 = self.stack.pop(-1)
-                    if type_op2 == 'i32':
-                        self.cast('float', op2)
-                        op2 = self.stack.pop(-1)
-                    if op == '+':
-                        self.instruction('fadd float', op1, op2)
-                    elif op == '-':
-                        self.instruction('fsub float', op1, op2)
+                    if type_op1 == 'float' or type_op2 == 'float':
+                        if type_op1 != 'float':
+                            self.cast('float', op1)
+                            op1 = self.stack.pop(-1)
+                        if type_op2 != 'float':
+                            self.cast('float', op2)
+                            op2 = self.stack.pop(-1)
+                        if op == '+':
+                            self.instruction('fadd float', op1, op2)
+                        elif op == '-':
+                            self.instruction('fsub float', op1, op2)
+
+                    else:
+                        if type_op1 != 'i32':
+                            self.cast('i64', op1)
+                            op1 = self.stack.pop(-1)
+                        if type_op2 != 'i32':
+                            self.cast('i64', op2)
+                            op2 = self.stack.pop(-1)
+                        if op == '+':
+                            self.instruction('add i64', op1, op2)
+                        elif op == '-':
+                            self.instruction('sub i64', op1, op2)
 
         elif func == '@gleq':
             if len(self.stack) >= 3 and (
