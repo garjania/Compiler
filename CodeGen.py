@@ -175,7 +175,6 @@ class CodeGen:
                 type = self.search(self.stack[-2]).type
                 sym = self.search(self.stack[-2])
                 var = self.stack[-2]
-                print(self.stack)
                 if sym is None or not sym.is_string:
                     try:
                         if self.find(self.stack[-1]) != type:
@@ -261,7 +260,7 @@ class CodeGen:
                     type_op1 = self.type_of_const(op1)
 
                 if type_op1 != 'float':
-                    if self.find(op1) != 'i64':
+                    if type_op1 != 'i64':
                         self.cast('i64', op1)
                         op1 = self.stack.pop(-1)
                     self.cast('float', op1)
@@ -278,9 +277,9 @@ class CodeGen:
                 #         type_op2 = 'i32'
                 else:
                     type_op2 = self.type_of_const(op2)
-                print('hoooy',op2,op1)
+
                 if type_op2 != 'i64':
-                    if self.find(op2) != 'i64':
+                    if type_op2 != 'i64':
                         self.cast('i64', op2)
                         op2 = self.stack.pop(-1)
                     self.cast('float', op2)
@@ -350,7 +349,7 @@ class CodeGen:
                     type_op1 = self.type_of_const(op1)
 
                 if type_op1 != 'float':
-                    if self.find(op1) != 'i64':
+                    if type_op1 != 'i64':
                         self.cast('i64', op1)
                         op1 = self.stack[-1]
                     self.cast('float', op1)
@@ -362,7 +361,7 @@ class CodeGen:
                     type_op2 = self.type_of_const(op2)
 
                 if type_op2 != 'i64':
-                    if self.find(op2) != 'i64':
+                    if type_op2 != 'i64':
                         self.cast('i64', op2)
                         op2 = self.stack[-1]
                     self.cast('float', op2)

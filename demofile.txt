@@ -1,12 +1,19 @@
+
+procedure print(input : integer)
+begin
+    write("the number is : ") ;
+    write(input) ;
+    write("\n") ;
+end
+
 function main() : integer
 begin
-    a : integer := 2 ;
-    b : integer := 3 ;
-    c : real ;
-    c := b / a ;
-    if (c <> 1) then
+    index : integer := 0 ;
+
+    while (index <> 20) do
     begin
-        write("not equal ! ") ;
+        print(index) ;
+        index := index + 1 ;
     end;
 
     return 0 ;
