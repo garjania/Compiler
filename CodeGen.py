@@ -140,26 +140,29 @@ class CodeGen:
         elif func == '@dcl_assign':
             if token == 'ASSIGNMENT':
                 acc = ' '
-                type = self.search(self.var).type
+                print('asdfaaaf',self.stack)
+                try:
+                    type = self.find(self.var)
+                except KeyError:
+                    type = self.type_of_const(self.var)
                 sym = self.search(self.var)
                 if sym is None or not sym.is_string:
-                    print(self.stack)
                     try:
                         if self.find(self.stack[-1]) != type:
-                            if self.find(self.stack[-1]) != 'i64':
-                                self.cast('i64', self.stack[-1])
-                            if type != 'i64':
-                                self.cast(type, self.stack[-1])
+                            self.cast(type, self.stack[-1])
                         acc = ' %'
                     except KeyError:
                         if self.type_of_const(self.stack[-1]) != type:
-                            if self.type_of_const(self.stack[-1]) != 'i64':
-                                self.cast('i64', self.stack[-1])
-                            if type != 'i64':
-                                self.cast(type, self.stack[-1])
+                            self.cast(type, self.stack[-1])
                             acc = ' %'
+                    try:
+                        self.find(self.stack[-1])
+                    except KeyError:
+                        print('asdf',self.get_const_in_llvm(self.stack[-1]),self.stack[-1])
+                        self.stack[-1] = self.get_const_in_llvm(self.stack[-1])
 
-                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.var)
+
+                    self.ops.append('store ' + type + acc + str(self.stack[-1]) + ', ' + type + '* %' + self.var)
 
                 else:
                     str_sym = self.search(self.stack[-1])
@@ -172,26 +175,27 @@ class CodeGen:
         elif func == '@assign':
             if token == 'ASSIGNMENT':
                 acc = ' '
-                type = self.search(self.stack[-2]).type
+                try:
+                    type = self.find(self.stack[-2])
+                except KeyError:
+                    type = self.type_of_const(self.stack[-2])
                 sym = self.search(self.stack[-2])
                 var = self.stack[-2]
                 if sym is None or not sym.is_string:
                     try:
                         if self.find(self.stack[-1]) != type:
-                            if self.find(self.stack[-1]) != 'i64':
-                                self.cast('i64', self.stack[-1])
-                            if type != 'i64':
-
-                                self.cast(type, self.stack[-1])
+                            self.cast(type, self.stack[-1])
                         acc = ' %'
                     except KeyError:
                         if self.type_of_const(self.stack[-1]) != type:
-                            if self.type_of_const(self.stack[-1]) != 'i64':
-                                self.cast('i64', self.stack[-1])
-                            if type != 'i64':
-                                self.cast(type, self.stack[-1])
-                    # self.ops.append('asdfasdfs')
-                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + var)
+                            self.cast(type, self.stack[-1])
+                            acc = ' %'
+
+                    try:
+                        self.find(self.stack[-1])
+                    except KeyError:
+                        self.stack[-1] = self.get_const_in_llvm(self.stack[-1])
+                    self.ops.append('store ' + type + acc + str(self.stack[-1]) + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
                     sym.size = str_sym.type
@@ -204,24 +208,28 @@ class CodeGen:
             if self.is_bulk:
                 acc = ' '
                 print(self.stack)
-                type = self.search(self.stack[-2][0]).type
+                try:
+                    type = self.find(self.stack[-2][0])
+                except KeyError:
+                    type = self.type_of_const(self.stack[-2])
                 sym = self.search(self.stack[-2][0])
                 var = self.stack[-2][0]
                 if sym is None or not sym.is_string:
                     try:
                         if self.find(self.stack[-1]) != type:
-                            if self.find(self.stack[-1]) != 'i64':
-                                self.cast('i64', self.stack[-1])
-                            if type != 'i64':
-                                self.cast(type, self.stack[-1])
+                            self.cast(type, self.stack[-1])
+                            self.stack.pop(-2)
                         acc = ' %'
                     except KeyError:
                         if self.type_of_const(self.stack[-1]) != type:
-                            if self.type_of_const(self.stack[-1]) != 'i64':
-                                self.cast('i64', self.stack[-1])
-                            if type != 'i64':
-                                self.cast(type, self.stack[-1])
-                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + var)
+                            self.cast(type, self.stack[-1])
+                            self.stack.pop(-2)
+                            acc = '%'
+                    try:
+                        self.find(self.stack[-1])
+                    except KeyError:
+                        self.stack[-1] = self.get_const_in_llvm(self.stack[-1])
+                    self.ops.append('store ' + type + acc + str(self.stack[-1]) + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
                     sym.size = str_sym.type
@@ -242,54 +250,65 @@ class CodeGen:
                 op2 = self.stack[-3]  # id const
                 print(op1, op2)
 
-                m1 = re.compile("^([0-9])+")
-                m2 = re.compile("^([0-9])+([.])([0-9])+")
                 m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
                 m4 = re.compile("^([_])([0-9])+")
 
                 if m3.match(op1) or m4.match(op1):
                     type_op1 = self.find(op1)
-                # elif m2.match(op1):
-                #     type_op1 = 'float'
-                # elif m1.match(op1):
-                #     if abs(op1) > 128:
-                #         type_op1 = 'i64'
-                #     else:
-                #         type_op1 = 'i32'
                 else:
                     type_op1 = self.type_of_const(op1)
 
-                if type_op1 != 'float':
-                    if type_op1 != 'i64':
-                        self.cast('i64', op1)
-                        op1 = self.stack.pop(-1)
-                    self.cast('float', op1)
-                    op1 = self.stack.pop(-1)
-
                 if m3.match(op2) or m4.match(op2):
                     type_op2 = self.find(op2)
-                # elif m2.match(op2):
-                #     type_op2 = 'float'
-                # elif m1.match(op2):
-                #     if abs(op2) > 128:
-                #         type_op2 = 'i64'
-                #     else:
-                #         type_op2 = 'i32'
                 else:
                     type_op2 = self.type_of_const(op2)
 
-                if type_op2 != 'i64':
-                    if type_op2 != 'i64':
-                        self.cast('i64', op2)
+                if type_op1 == type_op2:
+                    if type_op1 == 'i64' or type_op1 == 'i32' or type_op1 == 'i8' or type_op1 == 'i1':
+                        if op == '*':
+                            self.instruction('mul ' + type_op1, op1, op2)
+                        elif op == '/':
+                            self.instruction('sdiv ' + type_op1, op1, op2)
+                        elif op == '%':
+                            self.instruction('srem ' + type_op1, op1, op2)
+
+                    if type_op1 == 'float':
+                        if op == '*':
+                            self.instruction('fmul ' + type_op1, op1, op2)
+                        elif op == '/':
+                            self.instruction('fdiv ' + type_op1, op1, op2)
+                        elif op == '%':
+                            self.instruction('frem ' + type_op1, op1, op2)
+
+                elif type_op1 != 'float' and type_op2 != 'float':
+                    mix_type = max(int(type_op1[1:]), int(type_op2[1:]))
+                    mix_type = 'i' + str(mix_type)
+                    if type_op1 != mix_type:
+                        self.cast(mix_type, op1)
+                        op1 = self.stack.pop(-1)
+                    if type_op2 != mix_type:
+                        self.cast(mix_type, op2)
                         op2 = self.stack.pop(-1)
-                    self.cast('float', op2)
-                    op2 = self.stack.pop(-1)
-                if op == '*':
-                    self.instruction('fmul float', op1, op2)
-                elif op == '/':
-                    self.instruction('fdiv float', op1, op2)
-                elif op == '%':
-                    self.instruction('frem float', op1, op2)
+                    if op == '*':
+                        self.instruction('mul ' + type_op1, op1, op2)
+                    elif op == '/':
+                        self.instruction('sdiv ' + type_op1, op1, op2)
+                    elif op == '%':
+                        self.instruction('srem ' + type_op1, op1, op2)
+
+                else:
+                    if type_op1 != 'float':
+                        self.cast('float', op1)
+                        op1 = self.stack.pop(-1)
+                    if type_op2 != 'float':
+                        self.cast('float', op2)
+                        op2 = self.stack.pop(-1)
+                    if op == '*':
+                        self.instruction('fmul ' + type_op1, op1, op2)
+                    elif op == '/':
+                        self.instruction('fdiv ' + type_op1, op1, op2)
+                    elif op == '%':
+                        self.instruction('frem ' + type_op1, op1, op2)
 
         elif func == '@plus_minus':
             if len(self.stack) >= 3 and (self.stack[-2] == '+' or self.stack[-2] == '-'):
@@ -299,77 +318,55 @@ class CodeGen:
                 op2 = self.stack[-3]  # id const
                 print(op1, op2)
 
-                m1 = re.compile("^([0-9])+")
-                m2 = re.compile("^([0-9])+([.])([0-9])+")
                 m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
                 m4 = re.compile("^([_])([0-9])+")
 
                 if m3.match(op1) or m4.match(op1):
                     type_op1 = self.find(op1)
-                # elif m2.match(op1):
-                #     type_op1 = 'float'
-                # elif m1.match(op1):
-                #     if abs(op1) > 128:
-                #         type_op1 = 'i64'
-                #     else:
-                #         type_op1 = 'i32'
-                # else:
-                #     raise TypeError
-                #
-                # if m3.match(op2) or m4.match(op2):
-                #     type_op2 = self.find(op2)
-                # elif m2.match(op2):
-                #     type_op2 = 'float'
-                # elif m1.match(op2):
-                #     if abs(op2) > 128:
-                #         type_op2 = 'i64'
-                #     else:
-                #         type_op2 = 'i32'
-                # else:
-                #     raise TypeError
-                #
-                # if type_op1 == type_op2:
-                #     if type_op1 == 'i64':
-                #         if op == '+':
-                #             self.instruction('add i64', op1, op2)
-                #         elif op == '-':
-                #             self.instruction('sub i64', op1, op2)
-                #     if type_op1 == 'i32':
-                #         if op == '+':
-                #             self.instruction('add i32', op1, op2)
-                #         elif op == '-':
-                #             self.instruction('sub i32', op1, op2)
-                #     if type_op1 == 'float':
-                #         if op == '+':
-                #             self.instruction('fadd float', op1, op2)
-                #         elif op == '-':
-                #             self.instruction('fsub float', op1, op2)
-
                 else:
                     type_op1 = self.type_of_const(op1)
-
-                if type_op1 != 'float':
-                    if type_op1 != 'i64':
-                        self.cast('i64', op1)
-                        op1 = self.stack.pop(-1)
-                    self.cast('float', op1)
-                    op1 = self.stack.pop(-1)
 
                 if m3.match(op2) or m4.match(op2):
                     type_op2 = self.find(op2)
                 else:
                     type_op2 = self.type_of_const(op2)
 
-                if type_op2 != 'i64':
-                    if type_op2 != 'i64':
-                        self.cast('i64', op2)
+                if type_op1 == type_op2:
+                    if type_op1 == 'i64' or type_op1 == 'i32' or type_op1 == 'i8' or type_op1 == 'i1':
+                        if op == '+':
+                            self.instruction('add ' + type_op1, op1, op2)
+                        elif op == '-':
+                            self.instruction('sub ' + type_op1, op1, op2)
+                    if type_op1 == 'float':
+                        if op == '+':
+                            self.instruction('fadd float', op1, op2)
+                        elif op == '-':
+                            self.instruction('fsub float', op1, op2)
+
+                elif type_op1 != 'float' and type_op2 != 'float':
+                    mix_type = max(int(type_op1[1:]), int(type_op2[1:]))
+                    mix_type = 'i' + str(mix_type)
+                    if type_op1 != mix_type:
+                        self.cast(mix_type, op1)
+                        op1 = self.stack.pop(-1)
+                    if type_op2 != mix_type:
+                        self.cast(mix_type, op2)
                         op2 = self.stack.pop(-1)
-                    self.cast('float', op2)
-                    op2 = self.stack.pop(-1)
-                if op == '+':
-                    self.instruction('fadd float', op1, op2)
-                elif op == '-':
-                    self.instruction('fsub float', op1, op2)
+                    if op == '+':
+                        self.instruction('add ' + mix_type, op1, op2)
+                    elif op == '-':
+                        self.instruction('sub ' + mix_type, op1, op2)
+                else:
+                    if type_op1 != 'float':
+                        self.cast('float', op1)
+                        op1 = self.stack.pop(-1)
+                    if type_op2 != 'float':
+                        self.cast('float', op2)
+                        op2 = self.stack.pop(-1)
+                    if op == '+':
+                        self.instruction('fadd float', op1, op2)
+                    elif op == '-':
+                        self.instruction('fsub float', op1, op2)
 
         elif func == '@gleq':
             if len(self.stack) >= 3 and (
@@ -544,9 +541,6 @@ class CodeGen:
                     type_op1 = self.type_of_const(op1)
 
                 if type_op1 != 'i1':
-                    if type_op1 != 'i64':
-                        self.cast('i64', op1)
-                        op1 = self.stack.pop(-1)
                     self.cast('i1', op1)
                     op1 = self.stack.pop(-1)
 
@@ -556,9 +550,6 @@ class CodeGen:
                     type_op2 = self.type_of_const(op2)
 
                 if type_op2 != 'i1':
-                    if type_op2 != 'i64':
-                        self.cast('i64', op2)
-                        op2 = self.stack.pop(-1)
                     self.cast('i1', op2)
                     op2 = self.stack.pop(-1)
                 type = 'i1'
@@ -579,9 +570,6 @@ class CodeGen:
                     type_op1 = self.type_of_const(op1)
 
                 if type_op1 != 'i1':
-                    if type_op1 != 'i64':
-                        self.cast('i64', op1)
-                        op1 = self.stack.pop(-1)
                     self.cast('i1', op1)
                     op1 = self.stack.pop(-1)
 
@@ -591,9 +579,6 @@ class CodeGen:
                     type_op2 = self.type_of_const(op2)
 
                 if type_op2 != 'i1':
-                    if type_op2 != 'i64':
-                        self.cast('i64', op2)
-                        op2 = self.stack.pop(-1)
                     self.cast('i1', op2)
                     op2 = self.stack.pop(-1)
                 type = 'i1'
@@ -873,6 +858,9 @@ class CodeGen:
             var_const_1 = ' %'
         except KeyError:
             type = self.type_of_const(id1)
+            print(id1)
+            id1 = str(self.get_const_in_llvm(id1))
+            print(id1)
 
         if type == 'i32':
             if type2 == 'float':
@@ -885,13 +873,16 @@ class CodeGen:
                 self.ops.append(
                     '%' + name + ' = ' + ' zext' + ' i32' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-            else:
+            elif type2 == 'i8' or type2 == 'i1':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' trunc' + ' i32' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
+            else:
+                raise InterruptedError
+
         elif type == 'float':
-            if type2 == 'i64':
+            if type2 == 'i64' or type2 == 'i32' or type2 == 'i8' or type2 == 'i1':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' fptosi' + ' float' + var_const_1 + id1 + ' to ' + type2)
@@ -899,8 +890,8 @@ class CodeGen:
             else:
                 raise InterruptedError
 
-        elif type == 'i1' or type == 'i8':
-            if type2 == 'i64':
+        elif type == 'i1':
+            if type2 == 'i64' or type2 == 'i32' or type2 == 'i8':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' zext ' + type + ' ' + var_const_1 + id1 + ' to ' + type2)
@@ -928,6 +919,25 @@ class CodeGen:
 
             else:
                 print(type, type2)
+                raise InterruptedError
+
+        elif type == 'i8':
+            if type2 == 'float':
+                name = self.get_unnamed(type2)
+                self.ops.append(
+                    '%' + name + ' = ' + ' sitofp' + ' i8' + var_const_1 + id1 + ' to ' + type2)
+                self.stack.append(name)
+            elif type2 == 'i64' or type2 == 'i32':
+                name = self.get_unnamed(type2)
+                self.ops.append(
+                    '%' + name + ' = ' + ' zext' + ' i8' + var_const_1 + id1 + ' to ' + type2)
+                self.stack.append(name)
+            elif type2 == 'i1':
+                name = self.get_unnamed(type2)
+                self.ops.append(
+                    '%' + name + ' = ' + ' trunc' + ' i8' + var_const_1 + id1 + ' to ' + type2)
+                self.stack.append(name)
+            else:
                 raise InterruptedError
 
         else:
@@ -1044,12 +1054,27 @@ class CodeGen:
                 float(const)
                 type = 'float'
             except ValueError:
-                try:
+                if len(const) == 1:
+                    type = 'i8'
+                else:
                     bool(const)
                     type = 'i1'
-                except ValueError:
-                    if len(const) == 1:
-                        type = 'i8'
-                    else:
-                        type = 'string'
         return type
+
+    def get_const_in_llvm(self, const):
+        try:
+            ret = int(const)
+        except ValueError:
+            try:
+                ret = float(const)
+            except ValueError:
+                if len(const) == 1:
+                    ret = ord(const)
+                else:
+                    if bool(const):
+                        print('injas')
+                        ret = 1
+                    else:
+                        print('oh oh')
+                        ret = 0
+        return ret
