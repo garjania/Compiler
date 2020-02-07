@@ -5,7 +5,7 @@ from Scanner import Scanner
 
 
 class Parser:
-    def __init__(self):
+    def __init__(self, PATH):
         self.grammar = {'VAR_DCL': [['id', ':', 'SIMPLE_VAR'],
                                     ['id', ':', 'ARRAY_VAR']],
                         'FUNC_DEF': [['function', 'id', '(', ')', ':', 'TYPE', 'BLOCK'],
@@ -97,7 +97,7 @@ class Parser:
                                          ['id', ':', 'ARRAY_VAR']]}
         self.table = []
         self.read_table()
-        self.scanner = Scanner()
+        self.scanner = Scanner(PATH)
         self.code_gen = CodeGen(self.scanner)
 
     def read_table(self):
@@ -156,10 +156,5 @@ class Parser:
                 stack[-1][1] = act[1]
             elif act[0] == 'ACCEPT':
                 self.code_gen.write()
-                print('yes chaghal')
+                print('Compiled Successfully!')
                 break
-
-
-if __name__ == '__main__':
-    parser = Parser()
-    parser.parse()

@@ -5,8 +5,11 @@ import re
 class CodeGen:
     def __init__(self, scanner):
         self.stack = []
-        self.ops = ['@.i32 = private unnamed_addr constant [3 x i8] c"%d\\00", '
-                    'align 1', 'declare i32 @scanf(i8*, ...)',
+        self.ops = ['@.i32 = private unnamed_addr constant [3 x i8] c"%d\\00" ',
+                    '@.i8 = private unnamed_addr constant [3 x i8] c"%c\\00" ',
+                    '@.i64 = private unnamed_addr constant [3 x i8] c"%f\\00" ',
+                    '@.i1 = private unnamed_addr constant [3 x i8] c"%d\\00" ',
+                    'declare i32 @scanf(i8*, ...)',
                     'declare i32 @printf(i8*, ...)']
         self.is_glob = True
         self.func_mode = False
@@ -479,7 +482,9 @@ class CodeGen:
                 self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
                 self.stack = self.stack[:-1]
                 self.stack[-1] = self.stack[-1][1:]
-                self.is_bulk = False
+
+        elif func == '@end_bulk_assign':
+            self.is_bulk = False
 
         # print(self.stack)
         # print(self.ops)

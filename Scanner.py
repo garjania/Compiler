@@ -41,9 +41,9 @@ digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 class Scanner:
-    def __init__(self):
+    def __init__(self,PATH):
         init_scope()
-        f = open("demofile.txt", "r")
+        f = open(PATH, 'r')
         self.inp = f.read()
         self.prev_token = None
         self.const = None
@@ -239,7 +239,6 @@ class Scanner:
                     raise SyntaxError
 
 
-scanner = Scanner()
 # for i in range(100):
 #     print(scanner.scan())
 # character constant: cc
