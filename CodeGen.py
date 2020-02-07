@@ -9,6 +9,7 @@ class CodeGen:
                     '@.i8 = private unnamed_addr constant [3 x i8] c"%c\\00" ',
                     '@.i64 = private unnamed_addr constant [3 x i8] c"%f\\00" ',
                     '@.i1 = private unnamed_addr constant [3 x i8] c"%d\\00" ',
+                    '@.str = private unnamed_addr constant [3 x i8] c"%s\\00" ',
                     'declare i32 @scanf(i8*, ...)',
                     'declare i32 @printf(i8*, ...)']
         self.is_glob = True
@@ -42,11 +43,11 @@ class CodeGen:
                     if sym.is_string:
                         type = sym.size + '*'
                         self.search(name).type = sym.size
+                        self.search(name).is_string = True
                     else:
                         type = sym.type
-                    self.ops.append(
-                        sym.glob_loc + name + ' = load ' + type + ', ' + type + '* ' + sym.glob_loc + self.stack[
-                            -1])
+                    self.ops.append(sym.glob_loc + name + ' = load ' + type + ', ' + type + '* ' + sym.glob_loc +
+                                    self.stack[-1])
                     self.stack[-1] = name
                 self.handle_uni()
 
@@ -140,19 +141,21 @@ class CodeGen:
                 type = self.search(self.var).type
                 sym = self.search(self.var)
                 if sym is None or not sym.is_string:
+                    print(self.stack)
                     try:
                         if self.find(self.stack[-1]) != type:
                             if self.find(self.stack[-1]) != 'i32':
                                 self.cast('i32', self.stack[-1])
                             if type != 'i32':
                                 self.cast(type, self.stack[-1])
-                        acc = '%'
+                        acc = ' %'
                     except KeyError:
                         if self.type_of_const(self.stack[-1]) != type:
                             if self.type_of_const(self.stack[-1]) != 'i32':
                                 self.cast('i32', self.stack[-1])
                             if type != 'i32':
                                 self.cast(type, self.stack[-1])
+                            acc = ' %'
                     self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.var)
 
                 else:
@@ -175,14 +178,14 @@ class CodeGen:
                                 self.cast('i32', self.stack[-1])
                             if type != 'i32':
                                 self.cast(type, self.stack[-1])
-                        acc = '%'
+                        acc = ' %'
                     except KeyError:
                         if self.type_of_const(self.stack[-1]) != type:
                             if self.type_of_const(self.stack[-1]) != 'i32':
                                 self.cast('i32', self.stack[-1])
                             if type != 'i32':
                                 self.cast(type, self.stack[-1])
-                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-3])
+                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2])
                 else:
                     str_sym = self.search(self.stack[-1])
                     sym.size = str_sym.type
@@ -190,6 +193,50 @@ class CodeGen:
                         'store ' + sym.size + '* getelementptr inbounds (' + sym.size + ', ' + sym.size + '* @' +
                         self.stack[-1] + ', i32 0), ' + sym.size + '** ' + sym.glob_loc + self.stack[-2])
                     self.ops[sym.allocate_point] = '%' + self.stack[-2] + ' = alloca ' + sym.size + '*'
+
+        elif func == '@assign_bulk':
+            if self.is_bulk:
+                acc = ' '
+                print(self.stack)
+                type = self.search(self.stack[-2][0]).type
+                sym = self.search(self.stack[-2][0])
+                if sym is None or not sym.is_string:
+                    try:
+                        if self.find(self.stack[-1]) != type:
+                            if self.find(self.stack[-1]) != 'i32':
+                                self.cast('i32', self.stack[-1])
+                            if type != 'i32':
+                                self.cast(type, self.stack[-1])
+                        acc = ' %'
+                    except KeyError:
+                        if self.type_of_const(self.stack[-1]) != type:
+                            if self.type_of_const(self.stack[-1]) != 'i32':
+                                self.cast('i32', self.stack[-1])
+                            if type != 'i32':
+                                self.cast(type, self.stack[-1])
+                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
+                else:
+                    str_sym = self.search(self.stack[-1])
+                    sym.size = str_sym.type
+                    self.ops.append(
+                        'store ' + sym.size + '* getelementptr inbounds (' + sym.size + ', ' + sym.size + '* @' +
+                        self.stack[-1] + ', i32 0), ' + sym.size + '** ' + sym.glob_loc + self.stack[-2][0])
+                    self.ops[sym.allocate_point] = '%' + self.stack[-2][0] + ' = alloca ' + sym.size + '*'
+                self.stack = self.stack[:-1]
+                self.stack[-1] = self.stack[-1][1:]
+
+            # if self.is_bulk:
+            #     # TODO get type
+            #     type = 'i32'
+            #     acc = ' '
+            #     try:
+            #         int(self.stack[-1])
+            #     except:
+            #         acc = ' %'
+            #         type = self.search(self.stack[-1]).type
+            #     self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
+            #     self.stack = self.stack[:-1]
+            #     self.stack[-1] = self.stack[-1][1:]
 
         elif func == '@access':
             self.access()
@@ -318,59 +365,122 @@ class CodeGen:
                 op = self.stack[-2]  # < > <= >=
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+
+                if self.search(op1) is not None:
+                    type = self.search(op1).type
+                elif self.search(op2) is not None:
+                    type = self.search(op2).type
+                else:
+                    m1 = re.compile("^([0-9])+")
+                    m2 = re.compile("^([0-9])+([.])([0-9])+")
+                    if m1.match(op1):
+                        type = 'i32'
+                    elif m2.match(op1):
+                        type = 'float'
+                    else:
+                        type = 'i1'
+
                 if op == '>':
-                    self.instruction('icmp slt i32', op1, op2)
+                    self.instruction('icmp slt ' + type, op1, op2)
                 elif op == '<':
-                    self.instruction('icmp sgt i32', op1, op2)
+                    self.instruction('icmp sgt ' + type, op1, op2)
                 elif op == '>=':
-                    self.instruction('icmp sle i32', op1, op2)
+                    self.instruction('icmp sle ' + type, op1, op2)
                 elif op == '<=':
-                    self.instruction('icmp sge i32', op1, op2)
+                    self.instruction('icmp sge ' + type, op1, op2)
 
         elif func == '@eq':
             if len(self.stack) >= 3 and (self.stack[-2] == '==' or self.stack[-2] == '<>'):
                 op = self.stack[-2]  # == <>
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
+
+                if self.search(op1) is not None:
+                    type = self.search(op1).type
+                elif self.search(op2) is not None:
+                    type = self.search(op2).type
+                else:
+                    type = 'i1'
+
                 if op == '==':
-                    self.instruction('icmp eq i32', op1, op2)
+                    self.instruction('icmp eq ' + type, op1, op2)
                 elif op == '<>':
-                    self.instruction('icmp ne i32', op1, op2)
+                    self.instruction('icmp ne ' + type, op1, op2)
 
         elif func == '@band':
             if len(self.stack) >= 3 and self.stack[-2] == '&':
                 op = self.stack[-2]  # &
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                self.instruction('and i32', op1, op2)
+
+                if self.search(op1) is not None:
+                    type = self.search(op1).type
+                elif self.search(op2) is not None:
+                    type = self.search(op2).type
+                else:
+                    type = 'i1'
+
+                self.instruction('and ' + type, op1, op2)
 
         elif func == '@bxor':
             if len(self.stack) >= 3 and self.stack[-2] == '^':
                 op = self.stack[-2]  # ^
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                self.instruction('xor i32', op1, op2)
+
+                if self.search(op1) is not None:
+                    type = self.search(op1).type
+                elif self.search(op2) is not None:
+                    type = self.search(op2).type
+                else:
+                    type = 'i1'
+
+                self.instruction('xor ' + type, op1, op2)
 
         elif func == '@bor':
             if len(self.stack) >= 3 and self.stack[-2] == 'bor':
                 op = self.stack[-2]  # bor
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                self.instruction('or i32', op1, op2)
+
+                if self.search(op1) is not None:
+                    type = self.search(op1).type
+                elif self.search(op2) is not None:
+                    type = self.search(op2).type
+                else:
+                    type = 'i1'
+
+                self.instruction('or ' + type, op1, op2)
 
         elif func == '@and':
             if len(self.stack) >= 3 and self.stack[-2] == 'and':
                 op = self.stack[-2]  # and
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                self.instruction('and i1', op1, op2)
+
+                if self.search(op1) is not None:
+                    type = self.search(op1).type
+                elif self.search(op2) is not None:
+                    type = self.search(op2).type
+                else:
+                    type = 'i1'
+
+                self.instruction('and ' + type, op1, op2)
 
         elif func == '@or':
             if len(self.stack) >= 3 and self.stack[-2] == 'or':
                 op = self.stack[-2]  # or
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                self.instruction('or i1', op1, op2)
+
+                if self.search(op1) is not None:
+                    type = self.search(op1).type
+                elif self.search(op2) is not None:
+                    type = self.search(op2).type
+                else:
+                    type = 'i1'
+
+                self.instruction('or ' + type, op1, op2)
 
         elif func == '@function_call':
             index = -1
@@ -469,20 +579,6 @@ class CodeGen:
             self.stack[-2].append(self.stack[-1])
             self.stack = self.stack[:-1]
 
-        elif func == '@assign_bulk':
-            if self.is_bulk:
-                # TODO get type
-                type = 'i32'
-                acc = ' '
-                try:
-                    int(self.stack[-1])
-                except:
-                    acc = ' %'
-                    type = self.search(self.stack[-1]).type
-                self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2][0])
-                self.stack = self.stack[:-1]
-                self.stack[-1] = self.stack[-1][1:]
-
         elif func == '@end_bulk_assign':
             self.is_bulk = False
 
@@ -529,7 +625,7 @@ class CodeGen:
     def push(self, token):
         if token == 'id':
             self.stack.append(self.scanner.id)
-        elif token == 'ic' or token == 'cc' or token == 'rc' or token == 'bc' or token == 'lc':
+        elif token == 'ic' or token == 'cc' or token == 'rc' or token == 'lc':
             self.token = token
             if len(self.stack) != 0 and self.stack[-1] == '-':
                 if token == 'ic' or token == 'lc':
@@ -541,6 +637,7 @@ class CodeGen:
                     self.stack.append(str(~self.scanner.const))
             else:
                 self.stack.append(str(self.scanner.const))
+
         elif token == 'sc':
             self.str_len = len(self.scanner.const) + 1
             splitted = self.scanner.const.split('\\n')
@@ -553,6 +650,11 @@ class CodeGen:
             self.ops = ['@' + s_var + ' = internal constant [' + str(
                 self.str_len) + ' x i8] c' + '\"' + self.scanner.const + '\\00\"'] + self.ops
             self.stack.append(s_var)
+        elif token == 'bc':
+            if self.scanner.const == 'True':
+                self.stack.append('1')
+            else:
+                self.stack.append('0')
         else:
             self.stack.append(token)
 
@@ -659,58 +761,44 @@ class CodeGen:
 
         if type == 'i32':
             if type2 == 'float':
-                name = self.get_unnamed('')
+                name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' sitofp' + ' i32' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-                symbol_table_stack[-1][name] = SymbolData(name, type=type2)
-                print(symbol_table_stack[-1].keys())
             elif type2 == 'i64':
-                name = self.get_unnamed('')
+                name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' zext' + ' i32' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-                symbol_table_stack[-1][name] = SymbolData(name, type=type2)
-                print(symbol_table_stack[-1].keys())
-
             else:
-                name = self.get_unnamed('')
+                name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' trunc' + ' i32' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-                symbol_table_stack[-1][name] = SymbolData(name, type=type2)
-                print(symbol_table_stack[-1].keys())
-
         elif type == 'float':
             if type2 == 'i32':
-                name = self.get_unnamed('')
+                name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' fptosi' + ' float' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-                symbol_table_stack[-1][name] = SymbolData(name, type=type2)
-                print(symbol_table_stack[-1].keys())
             else:
                 raise InterruptedError
 
         elif type == 'i1' or type == 'i8':
             if type2 == 'i32':
-                name = self.get_unnamed('')
+                name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' zext ' + type + ' ' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-                symbol_table_stack[-1][name] = SymbolData(name, type=type2)
-                print(symbol_table_stack[-1].keys())
             else:
                 raise InterruptedError
 
         elif type == 'i64':
             if type2 == 'i32':
-                name = self.get_unnamed('')
+                name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' trunc' + ' i64' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-                symbol_table_stack[-1][name] = SymbolData(name, type=type2)
-                print(symbol_table_stack[-1].keys())
             else:
                 raise InterruptedError
 
@@ -759,9 +847,13 @@ class CodeGen:
                     'call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
                     ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
             else:
-                self.ops.append(
-                    'call i32 (i8*, ...) @printf(i8* getelementptr inbounds (' + sym.type + ', ' + sym.type + '* @' + inp +
-                    ', i32 0, i32 0))')
+                if self.search(inp).glob_loc == '@':
+                    self.ops.append('call i32 (i8*, ...) @printf(i8* getelementptr inbounds (' + sym.type + ', ' +
+                                    sym.type + '* @' + inp + ', i32 0, i32 0))')
+                else:
+                    self.ops.append('call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]*'
+                                    ' @.str, i32 0, i32 0), ' + sym.type + '* %' + inp + ')')
+
         elif self.stack[index] == 'strlen':
             self.handle_strlen(self.stack[index + 1])
 
