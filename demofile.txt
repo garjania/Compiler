@@ -1,14 +1,32 @@
+
+function product(a : integer ; b : integer) : integer
+begin
+    result : integer := a * b ;
+    return result ;
+end
+
+procedure print(input : integer)
+begin
+    write("the number is : ") ;
+    write(input) ;
+    write("\n") ;
+end
+
+
+// this is a comment
+<-- hi
+i am a comment -->
+
 function main() : integer
 begin
-    a : integer := 2 ;
-    b : integer := 3 ;
-    c : float ;
-    c := b / a ;
-    if (c <> 1) then
-    begin
-        write("not equal ! ");
-    end ;
+
+    a : string := "hello!";
+    b : integer ;
+    c : real := 1 + 2*7;
+    d : integer := 3;
+    b := strlen(a);
+    print(product(b,d));
+
 
     return 0 ;
 end
-

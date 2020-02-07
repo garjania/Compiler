@@ -10,6 +10,8 @@ class SymbolData:
         self.function = function
         self.size = size
         self.is_string = False
+        self.arg = False
+        self.allocate_point = -1
 
 
 symbol_table_stack = []

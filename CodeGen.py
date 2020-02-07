@@ -31,13 +31,20 @@ class CodeGen:
         elif func == '@push_access':
             self.push(token)
             sym = self.search(self.stack[-1])
-            self.assign = True
+            if sym.array:
+                self.assign = True
             if not sym.array and not sym.function:
-                name = self.get_unnamed(sym.type)
-                self.ops.append(
-                    sym.glob_loc + name + ' = load ' + sym.type + ', ' + sym.type + '* ' + sym.glob_loc + self.stack[
-                        -1])
-                self.stack[-1] = name
+                if not sym.arg:
+                    name = self.get_unnamed(sym.type)
+                    if sym.is_string:
+                        type = sym.size + '*'
+                        self.search(name).type = sym.size
+                    else:
+                        type = sym.type
+                    self.ops.append(
+                        sym.glob_loc + name + ' = load ' + type + ', ' + type + '* ' + sym.glob_loc + self.stack[
+                            -1])
+                    self.stack[-1] = name
                 self.handle_uni()
 
         elif func == '@ret_id':
@@ -126,8 +133,22 @@ class CodeGen:
 
         elif func == '@dcl_assign':
             if token == 'ASSIGNMENT':
-                type = self.search(self.var).type
-                self.ops.append('store ' + type + ' %' + self.stack[-1] + ', ' + type + '* %' + self.var)
+                # TODO get type
+                type = 'i32'
+                acc = ' '
+                try:
+                    int(self.stack[-1])
+                except:
+                    acc = ' %'
+                    sym = self.search(self.var)
+                if acc == ' %' and sym.is_string:
+                    str_sym = self.search(self.stack[-1])
+                    sym.size = str_sym.type
+                    self.ops.append('store ' + sym.size + '* getelementptr inbounds (' + sym.size + ', ' + sym.size + '* @' +
+                                    self.stack[-1] + ', i32 0), ' + sym.size + '** '+ sym.glob_loc + self.var)
+                    self.ops[sym.allocate_point] = '%' + self.var + ' = alloca ' + sym.size + '*'
+                else:
+                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.var)
 
         elif func == '@assign':
             if token == 'ASSIGNMENT':
@@ -139,20 +160,26 @@ class CodeGen:
                     int(self.stack[-1])
                 except:
                     acc = ' %'
-                    type = self.search(self.stack[-2]).type
-                self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2])
+                    sym = self.search(self.stack[-2])
+                if acc == ' %' and sym.is_string:
+                    str_sym = self.search(self.stack[-1])
+                    sym.size = str_sym.type
+                    self.ops.append(
+                        'store ' + sym.size + '* getelementptr inbounds (' + sym.size + ', ' + sym.size + '* @' +
+                        self.stack[-1] + ', i32 0), ' + sym.size + '** ' + sym.glob_loc + self.stack[-2])
+                    self.ops[sym.allocate_point] = '%' + self.stack[-2] + ' = alloca ' + sym.size + '*'
+                else:
+                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2])
 
         elif func == '@access':
             self.access()
 
 
         elif func == '@mult_div_mod':
-            print(self.stack)
             if len(self.stack) >= 3 and (self.stack[-2] == '*' or self.stack[-2] == '/' or self.stack[-2] == '%'):
                 op = self.stack[-2]  # * / %
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                print(op1, op2)
                 type_op1 = None
                 type_op2 = None
 
@@ -179,7 +206,7 @@ class CodeGen:
                 else:
                     raise TypeError
 
-                print(type_op1,type_op2)
+                # print(type_op1,type_op2)
 
                 if type_op1 == type_op2:
                     if type_op1 == 'i32':
@@ -229,13 +256,13 @@ class CodeGen:
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
                 if op == '>':
-                    self.instruction('icmp sgt i32', op1, op2)
-                elif op == '<':
                     self.instruction('icmp slt i32', op1, op2)
+                elif op == '<':
+                    self.instruction('icmp sgt i32', op1, op2)
                 elif op == '>=':
-                    self.instruction('icmp sge i32', op1, op2)
-                elif op == '<=':
                     self.instruction('icmp sle i32', op1, op2)
+                elif op == '<=':
+                    self.instruction('icmp sge i32', op1, op2)
 
         elif func == '@eq':
             if len(self.stack) >= 3 and (self.stack[-2] == '==' or self.stack[-2] == '<>'):
@@ -288,16 +315,21 @@ class CodeGen:
                 try:
                     int(self.stack[index])
                 except:
-                    if self.stack[index][0] != '_':
+                    sym = self.search(self.stack[index])
+                    if sym.function:
                         break
                 index -= 1
             type = self.find(self.stack[index])
             pop_val = index
             name = self.get_unnamed(type)
+            # print(self.stack[index])
             if self.stack[index] == 'strlen' or self.stack[index] == 'read' or self.stack[index] == 'write':
                 self.handle_build_in_functions(index)
             else:
-                struct = '%' + name + ' = call ' + type + ' @' + self.stack[index] + '('
+                if type != 'void':
+                    struct = '%' + name + ' = call ' + type + ' @' + self.stack[index] + '('
+                else:
+                    struct = 'call ' + type + ' @' + self.stack[index] + '('
                 index += 1
                 while index != 0:
                     type = 'i32'
@@ -310,12 +342,14 @@ class CodeGen:
                     index += 1
                 self.ops.append(struct[:-1] + ')')
                 self.stack = self.stack[:pop_val]
-                self.stack.append(name)
+                if type != 'void':
+                    self.stack.append(name)
                 self.handle_uni()
 
         elif func == '@if':
             self.bra = False
-            struct = 'br i1 %' + self.get_unnamed('') + ', label %'
+            struct = 'br i1 %' + self.stack[-1] + ', label %'
+            self.stack = self.stack[:-1]
             eq1 = self.get_unnamed('label')
             eq2 = self.get_unnamed('label')
             struct += eq1 + ', label %' + eq2
@@ -358,6 +392,7 @@ class CodeGen:
 
         elif func == '@start_while':
             start = self.get_unnamed('label')
+            self.ops.append('br label %' + start)
             self.stack.append(start)
             self.ops.append(start + ':')
 
@@ -398,11 +433,11 @@ class CodeGen:
                 int(self.stack[-1])
                 num = True
             except:
-                if (self.stack[-1][0] != '_'):
+                sym = self.search(self.stack[-1])
+                if sym.array:
                     break
             if num:
                 arr.append((self.stack[-1], True))
-
             else:
                 arr.append((self.stack[-1], False))
             self.stack = self.stack[:-1]
@@ -412,7 +447,7 @@ class CodeGen:
             else:
                 cont += ', i32 %' + arr[i][0]
         sym = self.search(self.stack[-1])
-        name = self.get_unnamed(sym.type + '*')
+        name = self.get_unnamed(sym.type)
         struct = '%' + name + ' = getelementptr ' + sym.size + ', ' + sym.size + '* %' + self.stack[-1] \
                  + ', i32 0' + cont
         self.ops.append(struct)
@@ -423,6 +458,7 @@ class CodeGen:
             self.ops.append('%' + name + ' = load ' + sym.type + ', ' + sym.type + '* %' + self.stack[-1])
             self.stack = self.stack[:-1]
             self.stack.append(name)
+            self.assign = False
         self.handle_uni()
 
     def push(self, token):
@@ -442,6 +478,12 @@ class CodeGen:
                 self.stack.append(str(self.scanner.const))
         elif token == 'sc':
             self.str_len = len(self.scanner.const) + 1
+            splitted = self.scanner.const.split('\\n')
+            self.str_len -= len(splitted) - 1
+            out = splitted[0]
+            for i in range(len(splitted)-1):
+                out +=  '\\' + '0A' + splitted[i+1]
+            self.scanner.const = out
             s_var = self.get_unnamed('[' + str(self.str_len) + ' x i8]', True)
             self.ops = ['@' + s_var + ' = internal constant [' + str(
                 self.str_len) + ' x i8] c' + '\"' + self.scanner.const + '\\00\"'] + self.ops
@@ -461,7 +503,8 @@ class CodeGen:
         elif type == 'long':
             op_type = 'i64'
         elif type == 'string':
-            op_type = '[   x i8]'
+            op_type = 'i8*'
+            self.search(self.stack[-1]).is_string = True
         elif type == 'character':
             op_type = 'i8'
         self.stack.append(op_type)
@@ -480,6 +523,7 @@ class CodeGen:
                 allo_type = ' = alloca '
             struct = sign + self.stack[-4] + allo_type + self.stack[-3] + self.stack[-1] + self.stack[-2]
             self.ops.append(struct)
+            sym.allocate_point = len(self.ops)
         else:
             struct = self.stack[-3] + self.stack[-1] + self.stack[-2] + ' %' + self.stack[-4]
             self.stack[-5] += struct + ', '
@@ -497,9 +541,11 @@ class CodeGen:
             else:
                 struct = '%' + self.stack[-2] + ' = alloca ' + self.stack[-1]
             self.ops.append(struct)
+            sym.allocate_point = len(self.ops)
         else:
             struct = self.stack[-1] + ' %' + self.stack[-2]
             self.stack[-3] += struct + ', '
+            sym.arg = True
         self.var = self.stack[-2]
         self.stack = self.stack[:-2]
 
@@ -521,6 +567,7 @@ class CodeGen:
         self.stack.append(name)
 
     def find(self, id):
+        # print(id)
         type = self.search(id).type
         if type is None:
             print('WWWWWTTTTTFFFFF!!!')
@@ -564,6 +611,7 @@ class CodeGen:
             if sc:
                 symbol_table_stack[-1][self.unnamed_count].glob_loc = '@'
                 symbol_table_stack[-1][self.unnamed_count].is_string = True
+                symbol_table_stack[-1][self.unnamed_count].size = op
         self.unnamed_count = '_' + str(int(self.unnamed_count[1:]) + 1)
         return ret
 
@@ -596,7 +644,44 @@ class CodeGen:
             else:
                 self.ops.append(
                     'call i32 (i8*, ...) @printf(i8* getelementptr inbounds (' + sym.type + ', ' + sym.type +'* @' + inp +
-                    ', i32 0, i32 0)')
+                    ', i32 0, i32 0))')
+        elif self.stack[index] == 'strlen':
+            self.handle_strlen(self.stack[index+1])
+
+    def handle_strlen(self, input):
+        name = self.get_unnamed('i32')
+        self.ops.append('%' + name + ' = alloca i32')
+        self.ops.append('store i32 0, i32* %' + name)
+        lb1 = self.get_unnamed('label')
+        self.ops.append('br label %' + lb1)
+        self.ops.append(lb1+':')
+        self.stack.append(name)
+        name = self.get_unnamed('i32')
+        self.ops.append('%' + name + ' = load i32, i32* %' + self.stack[-1])
+        self.stack.append(name)
+        name = self.get_unnamed('i8')
+        sym = self.search(input)
+        self.ops.append('%' + name + ' = getelementptr ' + sym.type + ', ' + sym.type + '* ' + sym.glob_loc + input + ', i32 0, i32 %' + self.stack[-1])
+        self.stack[-1] = name
+        name = self.get_unnamed('i8')
+        self.ops.append('%' + name + ' = load i8, i8* %' + self.stack[-1])
+        self.stack[-1] = name
+        name = self.get_unnamed('i8')
+        self.ops.append('%' + name + ' = icmp ne i8 %' + self.stack[-1] + ', 0')
+        lb2 = self.get_unnamed('label')
+        lb3 = self.get_unnamed('label')
+        self.ops.append('br i1 %' + name + ', label %' + lb2 + ', label %' + lb3)
+        self.ops.append(lb2 + ':')
+        name = self.get_unnamed('i32')
+        self.ops.append('%' + name + ' = load i32, i32* %' + self.stack[-2])
+        self.stack[-1] = name
+        name = self.get_unnamed('i32')
+        self.ops.append('%' + name + ' = add nsw i32 %' + self.stack[-1] + ', 1')
+        self.ops.append('store i32 %' + name + ', i32* %' + self.stack[-2])
+        self.ops.append('br label %' + lb1)
+        self.ops.append(lb3 + ':')
+        self.stack = self.stack[:-4]
+        self.stack.append(name)
 
     def write(self):
         indent = ''
