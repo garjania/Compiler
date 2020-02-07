@@ -16,7 +16,7 @@ define i32 @main()
 	%_1 = load i32, i32* %a
 	%_2 = sdiv i32 %_1, %_0
 	%_3 =  sitofp i32 %_2 to float
-	store float%_3, float* %_2
+	store float%_3, float* %c
 	%_4 = load float, float* %c
 	%_5 = icmp ne i32 1, %_4
 	br i1 %_5, label %_6, label %_7

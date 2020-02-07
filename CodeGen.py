@@ -182,7 +182,7 @@ class CodeGen:
                                 self.cast('i32', self.stack[-1])
                             if type != 'i32':
                                 self.cast(type, self.stack[-1])
-                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-2])
+                    self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.stack[-3])
                 else:
                     str_sym = self.search(self.stack[-1])
                     sym.size = str_sym.type
