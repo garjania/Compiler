@@ -8,7 +8,7 @@ define i32 @product(i32 %a, i32 %b)
 {
 	%result = alloca i32
 	%_0 = mul i32 %b, %a
-	store i32 %_0, i32* %result
+	store i32%_0, i32* %result
 	%_1 = load i32, i32* %result
 	ret i32 %_1
 }
@@ -27,29 +27,30 @@ define i32 @main()
 	%c = alloca float
 	%_8 = mul i32 7, 2
 	%_9 = add i32 %_8, 1
-	store i32 %_9, i32* %c
+	%_10 =  sitofp i32 %_9 to float
+	store float%_10, float* %c
 	%d = alloca i32
 	store i32 3, i32* %d
-	%_10 = load [7 x i8]*, [7 x i8]** %a
-	%_12 = alloca i32
-	store i32 0, i32* %_12
-	br label %_13
-	_13:
-	%_14 = load i32, i32* %_12
-	%_15 = getelementptr [7 x i8], [7 x i8]* %_10, i32 0, i32 %_14
-	%_16 = load i8, i8* %_15
-	%_17 = icmp ne i8 %_16, 0
-	br i1 %_17, label %_18, label %_19
-	_18:
-	%_20 = load i32, i32* %_12
-	%_21 = add nsw i32 %_20, 1
-	store i32 %_21, i32* %_12
-	br label %_13
+	%_11 = load [7 x i8]*, [7 x i8]** %a
+	%_13 = alloca i32
+	store i32 0, i32* %_13
+	br label %_14
+	_14:
+	%_15 = load i32, i32* %_13
+	%_16 = getelementptr [7 x i8], [7 x i8]* %_11, i32 0, i32 %_15
+	%_17 = load i8, i8* %_16
+	%_18 = icmp ne i8 %_17, 0
+	br i1 %_18, label %_19, label %_20
 	_19:
-	store i32 %_21, i32* %b
-	%_22 = load i32, i32* %b
-	%_23 = load i32, i32* %d
-	%_24 = call i32 @product(i32 %_22,i32 %_23)
-	call void @print(i32 %_24)
+	%_21 = load i32, i32* %_13
+	%_22 = add nsw i32 %_21, 1
+	store i32 %_22, i32* %_13
+	br label %_14
+	_20:
+	store i32%_22, i32* %b
+	%_23 = load i32, i32* %b
+	%_24 = load i32, i32* %d
+	%_25 = call i32 @product(i32 %_23,i32 %_24)
+	call void @print(i32 %_25)
 	ret i32 0
 }

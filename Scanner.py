@@ -21,6 +21,7 @@ def init_scope():
     symbol_table = dict()
     symbol_table['boolean'] = SymbolData('boolean', type='i1', size=1)
     symbol_table['integer'] = SymbolData('integer', type='i32', size=4)
+    symbol_table['long'] = SymbolData('integer', type='i64', size=8)
     symbol_table['character'] = SymbolData('character', type='i8', size=1)
     symbol_table['real'] = SymbolData('real', type='float', size=4)
     symbol_table['read'] = SymbolData('read', type='void', size=4, function=True)
@@ -194,6 +195,7 @@ class Scanner:
                     self.id = m.group()
                     self.inp = self.inp[len(self.id):]
                     if not self.ignore:
+
                         flag = False
                         for sym_tab in symbol_table_stack:
                             if self.id in sym_tab.keys():
@@ -211,6 +213,7 @@ class Scanner:
                                 symbol_table_stack[-1][self.id] = SymbolData(self.id)
                                 flag = True
                         if not flag:
+                            print(self.id)
                             raise NotImplementedError
                     else:
 
