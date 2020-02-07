@@ -34,12 +34,9 @@ define i32 @main()
 	%_17 =  zext i32 %_14 to i64
 	%_18 =  sitofp i64 %_17 to float
 	%_19 = fadd float %_16, %_18
-	%_20 =  zext i32 %_14 to i64
-	%_21 =  sitofp i64 %_20 to float
-	%_22 = fadd float %_19, %_21
-	%_23 =  fptosi float %_22 to i64
-	%_24 =  trunc i64 %_23 to i32
-	store i32 %_24, i32* %_14
+	%_20 =  fptosi float %_19 to i64
+	%_21 =  trunc i64 %_20 to i32
+	store i32 %_21, i32* %index
 	br label %_5
 	_11:
 	ret i32 0

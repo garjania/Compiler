@@ -351,7 +351,7 @@ class CodeGen:
                 if type_op1 != 'float':
                     if type_op1 != 'i64':
                         self.cast('i64', op1)
-                        op1 = self.stack[-1]
+                        op1 = self.stack.pop(-1)
                     self.cast('float', op1)
                     op1 = self.stack.pop(-1)
 
@@ -363,7 +363,7 @@ class CodeGen:
                 if type_op2 != 'i64':
                     if type_op2 != 'i64':
                         self.cast('i64', op2)
-                        op2 = self.stack[-1]
+                        op2 = self.stack.pop(-1)
                     self.cast('float', op2)
                     op2 = self.stack.pop(-1)
                 if op == '+':
