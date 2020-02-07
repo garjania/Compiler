@@ -2,7 +2,7 @@ function main() : integer
 begin
     a : integer := 2 ;
     b : integer := 3 ;
-    c : integer ;
+    c : real ;
     c := b / a ;
     if (c <> 1) then
     begin
@@ -10,4 +10,4 @@ begin
     end;
 
     return 0 ;
-end 
+end

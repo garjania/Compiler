@@ -24,6 +24,7 @@ class CodeGen:
         self.is_bulk = False
         self.assign = False
         self.token = ''
+        self.arg = ''
 
     def CG(self, func, token):
         # print('===========')
@@ -35,6 +36,7 @@ class CodeGen:
         elif func == '@push_access':
             self.push(token)
             sym = self.search(self.stack[-1])
+            self.arg = self.stack[-1]
             if sym.array:
                 self.assign = True
             if not sym.array and not sym.function:
@@ -156,6 +158,7 @@ class CodeGen:
                             if type != 'i64':
                                 self.cast(type, self.stack[-1])
                             acc = ' %'
+
                     self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + self.var)
 
                 else:
@@ -172,12 +175,14 @@ class CodeGen:
                 type = self.search(self.stack[-2]).type
                 sym = self.search(self.stack[-2])
                 var = self.stack[-2]
+                print(self.stack)
                 if sym is None or not sym.is_string:
                     try:
                         if self.find(self.stack[-1]) != type:
                             if self.find(self.stack[-1]) != 'i64':
                                 self.cast('i64', self.stack[-1])
                             if type != 'i64':
+
                                 self.cast(type, self.stack[-1])
                         acc = ' %'
                     except KeyError:
@@ -186,6 +191,7 @@ class CodeGen:
                                 self.cast('i64', self.stack[-1])
                             if type != 'i64':
                                 self.cast(type, self.stack[-1])
+                    self.ops.append('asdfasdfs')
                     self.ops.append('store ' + type + acc + self.stack[-1] + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
@@ -244,6 +250,13 @@ class CodeGen:
 
                 if m3.match(op1) or m4.match(op1):
                     type_op1 = self.find(op1)
+                # elif m2.match(op1):
+                #     type_op1 = 'float'
+                # elif m1.match(op1):
+                #     if abs(op1) > 128:
+                #         type_op1 = 'i64'
+                #     else:
+                #         type_op1 = 'i32'
                 else:
                     type_op1 = self.type_of_const(op1)
 
@@ -256,6 +269,13 @@ class CodeGen:
 
                 if m3.match(op2) or m4.match(op2):
                     type_op2 = self.find(op2)
+                # elif m2.match(op2):
+                #     type_op2 = 'float'
+                # elif m1.match(op2):
+                #     if abs(op2) > 128:
+                #         type_op2 = 'i64'
+                #     else:
+                #         type_op2 = 'i32'
                 else:
                     type_op2 = self.type_of_const(op2)
 
@@ -287,6 +307,45 @@ class CodeGen:
 
                 if m3.match(op1) or m4.match(op1):
                     type_op1 = self.find(op1)
+                # elif m2.match(op1):
+                #     type_op1 = 'float'
+                # elif m1.match(op1):
+                #     if abs(op1) > 128:
+                #         type_op1 = 'i64'
+                #     else:
+                #         type_op1 = 'i32'
+                # else:
+                #     raise TypeError
+                #
+                # if m3.match(op2) or m4.match(op2):
+                #     type_op2 = self.find(op2)
+                # elif m2.match(op2):
+                #     type_op2 = 'float'
+                # elif m1.match(op2):
+                #     if abs(op2) > 128:
+                #         type_op2 = 'i64'
+                #     else:
+                #         type_op2 = 'i32'
+                # else:
+                #     raise TypeError
+                #
+                # if type_op1 == type_op2:
+                #     if type_op1 == 'i64':
+                #         if op == '+':
+                #             self.instruction('add i64', op1, op2)
+                #         elif op == '-':
+                #             self.instruction('sub i64', op1, op2)
+                #     if type_op1 == 'i32':
+                #         if op == '+':
+                #             self.instruction('add i32', op1, op2)
+                #         elif op == '-':
+                #             self.instruction('sub i32', op1, op2)
+                #     if type_op1 == 'float':
+                #         if op == '+':
+                #             self.instruction('fadd float', op1, op2)
+                #         elif op == '-':
+                #             self.instruction('fsub float', op1, op2)
+
                 else:
                     type_op1 = self.type_of_const(op1)
 
@@ -790,11 +849,8 @@ class CodeGen:
             var_const_2 = ' %'
         except KeyError:
             pass
-        name = self.get_unnamed('')
+        name = self.get_unnamed(inst.split()[-1])
         self.ops.append('%' + name + ' = ' + inst + var_const_1 + op1 + ',' + var_const_2 + op2)
-
-        type = inst.split()[-1]
-        symbol_table_stack[-1][name] = SymbolData(self.unnamed_count, type=type)
 
         self.stack.append(name)
 
@@ -859,19 +915,20 @@ class CodeGen:
                 raise InterruptedError
 
         elif type == 'i64':
-            if type2 == 'i32':
+            if type2 == 'i32' or type2 == 'i8' or type2 == 'i1':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' trunc' + ' i64' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
 
-            if type2 == 'float':
+            elif type2 == 'float':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' sitofp' + ' i64' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
 
             else:
+                print(type, type2)
                 raise InterruptedError
 
         else:
@@ -908,9 +965,9 @@ class CodeGen:
 
     def handle_build_in_functions(self, index):
         if self.stack[index] == 'read':
-            sym = self.search(self.var)
+            sym = self.search(self.arg)
             self.ops.append('call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
-                            ', i32 0, i32 0), ' + sym.type + '* ' + sym.glob_loc + self.var + ')')
+                            ', i32 0, i32 0), ' + sym.type + '* ' + sym.glob_loc + self.arg + ')')
         elif self.stack[index] == 'write':
             inp = self.stack[index + 1]
             sym = self.search(inp)
