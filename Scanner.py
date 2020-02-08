@@ -33,7 +33,7 @@ def init_scope():
 arithmetic_operations = ['+', '*', '&', '^', '|', '%']
 logical_operations = ['<=', '>', '>=', '==', '<>', '~']
 shitty_characters = ['(', ')', ',', ';', ':', ':=', '[', ']']
-data_types = ['array', 'boolean', 'integer', 'character', 'real', 'string']
+data_types = ['array', 'boolean', 'integer', 'character', 'real', 'string', 'long']
 key_words = ['function', 'procedure', 'begin', 'end', 'return', 'if', 'then', 'else', 'while', 'do', 'and', 'or',
              'of', 'break', 'assign', 'continue', 'var']
 white_spaces = ['\n', '\t', ' ', '\f', '\r', '\t', '\v']

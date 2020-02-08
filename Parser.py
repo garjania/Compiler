@@ -20,7 +20,8 @@ class Parser:
                                  ['real'],
                                  ['character'],
                                  ['string'],
-                                 ['boolean']],
+                                 ['boolean'],
+                                 ['long']],
                         'BLOCK': [['begin', 'STMT_LOOP', 'end']],
                         'STMT': [['return', 'EXPR'],
                                  ['CONDITIONAL'],
@@ -120,7 +121,7 @@ class Parser:
 
             act = self.table[top[0]][temp]
             # print(stack)
-            # print(act)
+            # print(temp)
             if act[0] == 'ERROR':
                 raise SyntaxError
             elif act[0] == 'SHIFT':

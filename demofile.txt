@@ -1,7 +1,5 @@
 function main() : integer
 begin
-	a : integer := 1 ;
-	b : real := 1.41;
-    write(a+b) ;
-	return 0 ;
+    write(2) ;
+    return 0 ;
 end

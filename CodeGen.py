@@ -6,8 +6,9 @@ class CodeGen:
     def __init__(self, scanner):
         self.stack = []
         self.ops = ['@.i32 = private unnamed_addr constant [3 x i8] c"%d\\00" ',
+                    '@.i64 = private unnamed_addr constant [4 x i8] c"%lu\\00" ',
                     '@.i8 = private unnamed_addr constant [3 x i8] c"%c\\00" ',
-                    '@.i64 = private unnamed_addr constant [3 x i8] c"%f\\00" ',
+                    '@.double = private unnamed_addr constant [3 x i8] c"%f\\00" ',
                     '@.i1 = private unnamed_addr constant [3 x i8] c"%d\\00" ',
                     '@.str = private unnamed_addr constant [3 x i8] c"%s\\00" ',
                     'declare i32 @scanf(i8*, ...)',
@@ -67,7 +68,7 @@ class CodeGen:
                 elif self.token == 'bc':
                     type = 'i1'
                 elif self.token == 'rc':
-                    type = 'float'
+                    type = 'double'
                 self.ops.append('ret ' + type + ' ' + self.stack[-1])
 
         elif func == '@def_var':
@@ -140,7 +141,6 @@ class CodeGen:
         elif func == '@dcl_assign':
             if token == 'ASSIGNMENT':
                 acc = ' '
-                print('asdfaaaf',self.stack)
                 try:
                     type = self.find(self.var)
                 except KeyError:
@@ -158,9 +158,9 @@ class CodeGen:
                     try:
                         self.find(self.stack[-1])
                     except KeyError:
-                        print('asdf',self.get_const_in_llvm(self.stack[-1]),self.stack[-1])
                         self.stack[-1] = self.get_const_in_llvm(self.stack[-1])
-
+                    if type == 'double' and acc == ' ':
+                        self.handle_double()
 
                     self.ops.append('store ' + type + acc + str(self.stack[-1]) + ', ' + type + '* %' + self.var)
 
@@ -195,6 +195,8 @@ class CodeGen:
                         self.find(self.stack[-1])
                     except KeyError:
                         self.stack[-1] = self.get_const_in_llvm(self.stack[-1])
+                    if type == 'double' and acc == ' ':
+                        self.handle_double()
                     self.ops.append('store ' + type + acc + str(self.stack[-1]) + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
@@ -207,7 +209,6 @@ class CodeGen:
         elif func == '@assign_bulk':
             if self.is_bulk:
                 acc = ' '
-                print(self.stack)
                 try:
                     type = self.find(self.stack[-2][0])
                 except KeyError:
@@ -229,6 +230,8 @@ class CodeGen:
                         self.find(self.stack[-1])
                     except KeyError:
                         self.stack[-1] = self.get_const_in_llvm(self.stack[-1])
+                    if type == 'double' and acc == ' ':
+                        self.handle_double()
                     self.ops.append('store ' + type + acc + str(self.stack[-1]) + ', ' + type + '* %' + var)
                 else:
                     str_sym = self.search(self.stack[-1])
@@ -248,7 +251,6 @@ class CodeGen:
                 op = self.stack[-2]  # * / %
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                print(op1, op2)
 
                 m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
                 m4 = re.compile("^([_])([0-9])+")
@@ -272,7 +274,7 @@ class CodeGen:
                         elif op == '%':
                             self.instruction('srem ' + type_op1, op1, op2)
 
-                    if type_op1 == 'float':
+                    if type_op1 == 'double':
                         if op == '*':
                             self.instruction('fmul ' + type_op1, op1, op2)
                         elif op == '/':
@@ -280,7 +282,7 @@ class CodeGen:
                         elif op == '%':
                             self.instruction('frem ' + type_op1, op1, op2)
 
-                elif type_op1 != 'float' and type_op2 != 'float':
+                elif type_op1 != 'double' and type_op2 != 'double':
                     mix_type = max(int(type_op1[1:]), int(type_op2[1:]))
                     mix_type = 'i' + str(mix_type)
                     if type_op1 != mix_type:
@@ -297,11 +299,11 @@ class CodeGen:
                         self.instruction('srem ' + type_op1, op1, op2)
 
                 else:
-                    if type_op1 != 'float':
-                        self.cast('float', op1)
+                    if type_op1 != 'double':
+                        self.cast('double', op1)
                         op1 = self.stack.pop(-1)
-                    if type_op2 != 'float':
-                        self.cast('float', op2)
+                    if type_op2 != 'double':
+                        self.cast('double', op2)
                         op2 = self.stack.pop(-1)
                     if op == '*':
                         self.instruction('fmul ' + type_op1, op1, op2)
@@ -316,7 +318,6 @@ class CodeGen:
                 op = self.stack[-2]  # * / %
                 op1 = self.stack[-1]  # id const
                 op2 = self.stack[-3]  # id const
-                print(op1, op2)
 
                 m3 = re.compile("^([A-Z]|[a-z])([A-Z]|[0-9]|[_]|[a-z])*")
                 m4 = re.compile("^([_])([0-9])+")
@@ -337,13 +338,13 @@ class CodeGen:
                             self.instruction('add ' + type_op1, op1, op2)
                         elif op == '-':
                             self.instruction('sub ' + type_op1, op1, op2)
-                    if type_op1 == 'float':
+                    if type_op1 == 'double':
                         if op == '+':
-                            self.instruction('fadd float', op1, op2)
+                            self.instruction('fadd double', op1, op2)
                         elif op == '-':
-                            self.instruction('fsub float', op1, op2)
+                            self.instruction('fsub double', op1, op2)
 
-                elif type_op1 != 'float' and type_op2 != 'float':
+                elif type_op1 != 'double' and type_op2 != 'double':
                     mix_type = max(int(type_op1[1:]), int(type_op2[1:]))
                     mix_type = 'i' + str(mix_type)
                     if type_op1 != mix_type:
@@ -357,16 +358,16 @@ class CodeGen:
                     elif op == '-':
                         self.instruction('sub ' + mix_type, op1, op2)
                 else:
-                    if type_op1 != 'float':
-                        self.cast('float', op1)
+                    if type_op1 != 'double':
+                        self.cast('double', op1)
                         op1 = self.stack.pop(-1)
-                    if type_op2 != 'float':
-                        self.cast('float', op2)
+                    if type_op2 != 'double':
+                        self.cast('double', op2)
                         op2 = self.stack.pop(-1)
                     if op == '+':
-                        self.instruction('fadd float', op1, op2)
+                        self.instruction('fadd double', op1, op2)
                     elif op == '-':
-                        self.instruction('fsub float', op1, op2)
+                        self.instruction('fsub double', op1, op2)
 
         elif func == '@gleq':
             if len(self.stack) >= 3 and (
@@ -730,12 +731,12 @@ class CodeGen:
             self.stack.append(self.scanner.id)
         elif token == 'ic' or token == 'cc' or token == 'rc' or token == 'lc':
             self.token = token
+            if token == 'cc':
+                self.scanner.const = ord(self.scanner.const)
             if len(self.stack) != 0 and self.stack[-1] == '-':
-                if token == 'ic' or token == 'lc':
                     self.stack = self.stack[:-1]
                     self.stack.append(str(-self.scanner.const))
             elif len(self.stack) != 0 and self.stack[-1] == '~':
-                if token == 'ic' or token == 'lc':
                     self.stack = self.stack[:-1]
                     self.stack.append(str(~self.scanner.const))
             else:
@@ -754,7 +755,7 @@ class CodeGen:
                 self.str_len) + ' x i8] c' + '\"' + self.scanner.const + '\\00\"'] + self.ops
             self.stack.append(s_var)
         elif token == 'bc':
-            if self.scanner.const == 'True':
+            if self.scanner.const:
                 self.stack.append('1')
             else:
                 self.stack.append('0')
@@ -767,7 +768,7 @@ class CodeGen:
         if type == 'integer':
             op_type = 'i32'
         elif type == 'real':
-            op_type = 'float'
+            op_type = 'double'
         elif type == 'boolean':
             op_type = 'i1'
         elif type == 'long':
@@ -840,7 +841,6 @@ class CodeGen:
 
     def find(self, id):
         if self.search(id) is None:
-            print('WWWWWTTTTTFFFFF!!!')
             raise KeyError
         type = self.search(id).type
         return type
@@ -858,12 +858,10 @@ class CodeGen:
             var_const_1 = ' %'
         except KeyError:
             type = self.type_of_const(id1)
-            print(id1)
             id1 = str(self.get_const_in_llvm(id1))
-            print(id1)
 
         if type == 'i32':
-            if type2 == 'float':
+            if type2 == 'double':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' sitofp' + ' i32' + var_const_1 + id1 + ' to ' + type2)
@@ -881,11 +879,11 @@ class CodeGen:
             else:
                 raise InterruptedError
 
-        elif type == 'float':
+        elif type == 'double':
             if type2 == 'i64' or type2 == 'i32' or type2 == 'i8' or type2 == 'i1':
                 name = self.get_unnamed(type2)
                 self.ops.append(
-                    '%' + name + ' = ' + ' fptosi' + ' float' + var_const_1 + id1 + ' to ' + type2)
+                    '%' + name + ' = ' + ' fptosi' + ' double' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
             else:
                 raise InterruptedError
@@ -896,7 +894,7 @@ class CodeGen:
                 self.ops.append(
                     '%' + name + ' = ' + ' zext ' + type + ' ' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
-            elif type2 == 'float':
+            elif type2 == 'double':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' sitofp ' + type + var_const_1 + id1 + ' to ' + type2)
@@ -911,18 +909,17 @@ class CodeGen:
                     '%' + name + ' = ' + ' trunc' + ' i64' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
 
-            elif type2 == 'float':
+            elif type2 == 'double':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' sitofp' + ' i64' + var_const_1 + id1 + ' to ' + type2)
                 self.stack.append(name)
 
             else:
-                print(type, type2)
                 raise InterruptedError
 
         elif type == 'i8':
-            if type2 == 'float':
+            if type2 == 'double':
                 name = self.get_unnamed(type2)
                 self.ops.append(
                     '%' + name + ' = ' + ' sitofp' + ' i8' + var_const_1 + id1 + ' to ' + type2)
@@ -941,8 +938,6 @@ class CodeGen:
                 raise InterruptedError
 
         else:
-            print(type)
-            print(id1)
             raise InterruptedError
 
     def get_unnamed(self, op, sc=False):
@@ -975,15 +970,24 @@ class CodeGen:
     def handle_build_in_functions(self, index):
         if self.stack[index] == 'read':
             sym = self.search(self.arg)
-            self.ops.append('call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
+            if sym.type == 'i64':
+                self.ops.append(
+                    'call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.' + sym.type +
+                    ', i32 0, i32 0), ' + sym.type + '* ' + sym.glob_loc + self.arg + ')')
+            else:
+                self.ops.append('call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
                             ', i32 0, i32 0), ' + sym.type + '* ' + sym.glob_loc + self.arg + ')')
         elif self.stack[index] == 'write':
             inp = self.stack[index + 1]
             sym = self.search(inp)
             if not sym.is_string:
-                self.ops.append(
-                    'call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
-                    ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
+                if sym.type == 'i64':
+                    self.ops.append(
+                        'call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.' + sym.type +
+                        ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
+                else:
+                    self.ops.append('call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.' + sym.type +
+                        ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
             else:
                 if self.search(inp).glob_loc == '@':
                     self.ops.append('call i32 (i8*, ...) @printf(i8* getelementptr inbounds (' + sym.type + ', ' +
@@ -1052,7 +1056,7 @@ class CodeGen:
         except ValueError:
             try:
                 float(const)
-                type = 'float'
+                type = 'double'
             except ValueError:
                 if len(const) == 1:
                     type = 'i8'
@@ -1060,6 +1064,57 @@ class CodeGen:
                     bool(const)
                     type = 'i1'
         return type
+
+    def handle_double(self):
+        return
+        def double_bin(number, places=3):
+            whole, dec = str(number).split(".")
+            whole = int(whole)
+            dec = int(dec)
+            res = bin(whole).lstrip("0b") + "."
+
+            for x in range(places):
+                whole, dec = str((decimal_converter(dec)) * 2).split(".")
+                dec = int(dec)
+                res += whole
+            return res
+
+        def decimal_converter(num):
+            while num > 1:
+                num /= 10
+            return num
+
+        def IEEE754(n):
+
+            sign = 0
+            if n < 0:
+                sign = 1
+                n = n * (-1)
+            p = 30
+
+            dec = double_bin(n, places=p)
+
+            whole, dec = str(dec).split(".")
+            whole = int(whole)
+
+            exponent = len(str(whole)) - 1
+            exponent_bits = 127 + exponent
+
+            exponent_bits = bin(exponent_bits).lstrip("0b")
+
+            mantissa = str(whole)[1:exponent + 1]
+            mantissa = mantissa + dec
+            mantissa = mantissa[0:23]
+
+            final = str(sign) + str(exponent_bits) + mantissa
+
+            hstr = '%0*X' % ((len(final) + 3) // 4, int(final, 2))
+
+            hstr += '0'*(16-len(hstr))
+
+            return (hstr)
+
+        self.stack[-1] = '0x' + IEEE754(self.stack[-1])
 
     def get_const_in_llvm(self, const):
         try:
@@ -1072,9 +1127,7 @@ class CodeGen:
                     ret = ord(const)
                 else:
                     if bool(const):
-                        print('injas')
                         ret = 1
                     else:
-                        print('oh oh')
                         ret = 0
         return ret
