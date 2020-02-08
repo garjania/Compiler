@@ -8,7 +8,7 @@ class CodeGen:
         self.ops = ['@.i32 = private unnamed_addr constant [3 x i8] c"%d\\00" ',
                     '@.i64 = private unnamed_addr constant [4 x i8] c"%lu\\00" ',
                     '@.i8 = private unnamed_addr constant [3 x i8] c"%c\\00" ',
-                    '@.double = private unnamed_addr constant [3 x i8] c"%f\\00" ',
+                    '@.double = private unnamed_addr constant [4 x i8] c"%lf\\00" ',
                     '@.i1 = private unnamed_addr constant [3 x i8] c"%d\\00" ',
                     '@.str = private unnamed_addr constant [3 x i8] c"%s\\00" ',
                     'declare i32 @scanf(i8*, ...)',
@@ -599,7 +599,7 @@ class CodeGen:
             type = self.find(self.stack[index])
             pop_val = index
             name = self.get_unnamed(type)
-            # print(self.stack[index])
+            print(self.stack)
             if self.stack[index] == 'strlen' or self.stack[index] == 'read' or self.stack[index] == 'write':
                 self.handle_build_in_functions(index)
             else:
@@ -970,7 +970,7 @@ class CodeGen:
     def handle_build_in_functions(self, index):
         if self.stack[index] == 'read':
             sym = self.search(self.arg)
-            if sym.type == 'i64':
+            if sym.type == 'i64' or sym.type == 'double':
                 self.ops.append(
                     'call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.' + sym.type +
                     ', i32 0, i32 0), ' + sym.type + '* ' + sym.glob_loc + self.arg + ')')
@@ -980,8 +980,9 @@ class CodeGen:
         elif self.stack[index] == 'write':
             inp = self.stack[index + 1]
             sym = self.search(inp)
+
             if not sym.is_string:
-                if sym.type == 'i64':
+                if sym.type == 'i64' or sym.type == 'double':
                     self.ops.append(
                         'call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.' + sym.type +
                         ', i32 0, i32 0), ' + sym.type + ' ' + sym.glob_loc + inp + ')')
